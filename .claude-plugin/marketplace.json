@@ -1,0 +1,37 @@
+{
+  "name": "anycloud-skills",
+  "owner": {
+    "name": "anycloud",
+    "email": "luis@anycloud.sh",
+    "url": "https://anycloud.sh"
+  },
+  "metadata": {
+    "description": "Skills for running AI workloads on the cheapest available cloud GPU across AWS, GCP, Azure, Lambda, and more — via anycloud",
+    "version": "0.1.0"
+  },
+  "plugins": [
+    {
+      "name": "anycloud",
+      "source": "./",
+      "description": "Run AI workloads — training, fine-tuning, evals, batch inference — on the cheapest available cloud GPU across AWS, GCP, Azure, Lambda, CoreWeave, and other clouds. Multi-cloud BYOC; spot-aware with automatic preemption recovery.",
+      "version": "0.1.0",
+      "author": {
+        "name": "anycloud",
+        "email": "luis@anycloud.sh"
+      },
+      "homepage": "https://anycloud.sh",
+      "repository": "https://github.com/anycloud-sh/anycloud-skills",
+      "license": "MIT",
+      "keywords": [
+        "Multi-Cloud",
+        "GPU",
+        "Training",
+        "Fine-Tuning",
+        "Spot",
+        "Cost Optimization",
+        "AI Infrastructure",
+        "BYOC"
+      ]
+    }
+  ]
+}
