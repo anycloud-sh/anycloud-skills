@@ -3,7 +3,7 @@
   "name": "anycloud",
   "displayName": "AnyCloud",
   "description": "Run AI workloads — training, fine-tuning, evals, batch inference — on the cheapest available cloud GPU across AWS, GCP, Azure, Lambda, CoreWeave, and other clouds. Multi-cloud BYOC; spot-aware with automatic preemption recovery.",
-  "version": "0.1.24",
+  "version": "0.1.25",
   "author": {
     "name": "anycloud",
     "email": "luis@anycloud.sh",
