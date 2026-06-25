@@ -24,7 +24,7 @@ AnyCloud is a multi-cloud orchestrator for AI batch jobs. It finds the cheapest 
 
 **Don't use AnyCloud for:**
 
-- Deploying long-running HTTP servers or inference endpoints — out of scope for this skill.
+- Long-running HTTP servers or inference endpoints — those use `anycloud serve` (deploys a server and prints a public URL at `https://<id>.anycloud.sh`), or `anycloud api serve` for a hosted AnyCloud control plane. This skill walks through **batch jobs**; serve is a sibling capability it doesn't cover.
 - Local-only workloads (run locally with Docker / Python directly).
 - Workloads that need to stay on a specific cloud for compliance — AnyCloud will pick the cheapest, which may move providers between runs unless constrained.
 
