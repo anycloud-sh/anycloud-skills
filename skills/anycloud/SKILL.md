@@ -82,7 +82,7 @@ anycloud submit ghcr.io/acme/my-training:latest \
     -- python train.py --lr 0.001 --epochs 50
 ```
 
-`anycloud login` logs your local Docker CLI into GHCR, so private GHCR images pull automatically. Add `--bake` when you'll run the same image digest repeatedly. The first run pulls and snapshots a baked VM image; subsequent runs reuse it only once that bake has finished — a still-baking image is invisible, so a sweep fired all at once won't share it. Warm the cache with one run, then fan out. (Submits reuse an _available_ baked image automatically; `--bake` only creates one.) Run `anycloud baked --credentials <name>` to see what's baked where for a named cloud account; clean up with `anycloud baked prune --credentials <name>`.
+`anycloud login` logs your local Docker CLI into GHCR, so private GHCR images pull automatically. On VM-backed providers, deployments start from the provider base image and pull the requested image reference; some retry paths can reuse an existing VM.
 
 ## Building and pushing your image
 
@@ -186,7 +186,6 @@ For `anycloud submit`:
 | `--env-file <file>`       | Load env vars from a `.env` file. Flags take precedence over file entries.                                             |
 | `--secret <name>`         | Inject a named secret as env vars (create with `anycloud secrets new`). Repeatable.                                    |
 | `--persist`               | Keep VM alive after the job exits — for exec / debug.                                                                  |
-| `--bake`                  | Snapshot a baked VM image after the pull so later same-digest, same-region runs skip it. Pin `--region`.               |
 | `-i, --id <id>`           | Custom deployment ID (otherwise auto-generated).                                                                       |
 
 Other Docker-runtime / targeting flags: `--memory`, `--cpus`, `--ipc`, `--runtime`, `--disk-size`, `--vm-type` (repeatable, explicit instance types), `--zone`, `--persist-bucket` — see the CLI reference.
