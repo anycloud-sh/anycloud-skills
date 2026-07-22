@@ -246,7 +246,7 @@ anycloud throttle set 20                          # $20/hr at any instant
 anycloud budget set 1000 --per month              # window: day | week | month
 anycloud budget set 50 --per day --agent-session  # scope a cap to THIS agent run only
 anycloud spend show                               # remaining headroom across all caps
-anycloud cost [<id>] [--period 7d|30d|90d|all]    # actual spend, after the fact
+anycloud cost [<id>] [--period 1d..90d]           # job + server spend, after the fact
 ```
 
 **A hit cap doesn't fail `submit`** — it returns an id, but the deployment stays `Queued` with a `blocked by throttle|budget …` reason in `anycloud status` / `ls`, then dispatches automatically once the cap clears (a VM ends, the window rolls over, or you raise the cap). Don't mistake a spend-blocked job for a stuck one — check `status`.
