@@ -117,7 +117,7 @@ Then submit it with the `anycloud submit` flags shown above.
 - **GPU images must be Linux-tested.** Start `FROM nvidia/cuda:*`, `pytorch/pytorch:*cuda*`, or an NVIDIA image you've run on Linux — a Mac build won't validate GPU access.
 - **Push rejected (`denied` / `401`)?** Re-run `anycloud login` — the stored Docker credential is only as fresh as your GitHub token, which Docker never refreshes on its own.
 - **GHCR image names must be lowercase.**
-- **For repeatable, commit-pinned builds, use CI.** GitHub Actions gives a `packages: write` `GITHUB_TOKEN` (no `anycloud login` needed). Full workflow: https://anycloud.sh/concepts/docker#build-in-ci-github-actions
+- **For repeatable, commit-pinned builds, use CI.** GitHub Actions gives a `packages: write` `GITHUB_TOKEN` (no `anycloud login` needed). Full workflow: https://anycloud.sh/platform/container-images#build-and-publish
 
 ## Before You Start (Agent Bootstrap)
 
@@ -303,8 +303,8 @@ Only `SELECT` / `WITH` / `EXPLAIN` / `PRAGMA` run; results cap at 10,000 rows (`
 - Install + first job: https://anycloud.sh/getting-started
 - CLI reference: https://anycloud.sh/reference/cli-reference
 - Python SDK: https://anycloud.sh/reference/python-sdk
-- Build & push images (Docker/GHCR): https://anycloud.sh/concepts/docker
-- Spot instances guide: https://anycloud.sh/guides/spot-instances
-- Spend controls (budget/throttle): https://anycloud.sh/guides/spend-controls
-- Bucket sync: https://anycloud.sh/guides/bucket-sync
-- Tutorial (training MACE): https://anycloud.sh/tutorials/mace
+- Build & push images (Docker/GHCR): https://anycloud.sh/platform/container-images
+- Spot instances guide: https://anycloud.sh/platform/jobs#spot-recovery
+- Spend controls (budget/throttle): https://anycloud.sh/platform/spend-controls
+- Bucket sync: https://anycloud.sh/platform/buckets
+- Tutorial (training MACE): https://anycloud.sh/examples/train-mace
