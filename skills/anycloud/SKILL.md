@@ -24,7 +24,7 @@ AnyCloud is a multi-cloud orchestrator for AI batch jobs. It finds the cheapest 
 
 **Don't use AnyCloud for:**
 
-- Long-running HTTP servers or inference endpoints — those use `anycloud serve` (deploys a server and prints a public URL at `https://<id>.anycloud.sh`), or `anycloud api serve` for a hosted AnyCloud control plane. This skill walks through **batch jobs**; serve is a sibling capability it doesn't cover.
+- Long-running HTTP servers or inference endpoints — those use `anycloud service` (deploys a server and prints a public URL at `https://<id>.anycloud.sh`), or `anycloud api serve` for a hosted AnyCloud control plane. This skill walks through **batch jobs**; `anycloud service` is a sibling capability it doesn't cover.
 - Local-only workloads (run locally with Docker / Python directly).
 - Workloads that need to stay on a specific cloud for compliance — AnyCloud will pick the cheapest, which may move providers between runs unless constrained.
 
@@ -33,7 +33,7 @@ AnyCloud is a multi-cloud orchestrator for AI batch jobs. It finds the cheapest 
 Two ways to get code onto the VM — pick by whether you need a custom image:
 
 - **No build:** the `@anycloud.function` decorator git-syncs your code onto a stock public image (e.g. `pytorch/pytorch:*cuda*`) at run time — use when an off-the-shelf image already has your deps + `git`. (Workflow 1 below.)
-- **Build your own image:** bake code + deps into a hermetic image, push to GHCR, then `anycloud submit` — for non-Python, CI, or when no public image fits. (Workflow 2 + "Building and pushing your image" below.)
+- **Build your own image:** bake code + deps into a hermetic image, push to GHCR, then `anycloud job` — for non-Python, CI, or when no public image fits. (Workflow 2 + "Building and pushing your image" below.)
 
 ### 1. Python `@anycloud.function` decorator — git-sync, fast iteration
 
@@ -66,12 +66,12 @@ job.wait()
 print(job.logs())
 ```
 
-### 2. Bring your own image + `anycloud submit` — hermetic image
+### 2. Bring your own image + `anycloud job` — hermetic image
 
-Use for non-Python workloads, CI pipelines, or any workload where the code should be baked into the image. Build and push the image yourself (laptop or CI), then submit the reference. One build, many runs.
+Use for non-Python workloads, CI pipelines, or any workload where the code should be baked into the image. Build and push the image yourself (laptop or CI), then run the reference. One build, many runs.
 
 ```bash
-anycloud submit ghcr.io/acme/my-training:latest \
+anycloud job ghcr.io/acme/my-training:latest \
     --id lr-sweep-1e-3 \
     --credentials my-aws \
     --gpu-type h100 \
@@ -111,7 +111,7 @@ docker buildx build \
     --push .
 ```
 
-Then submit it with the `anycloud submit` flags shown above.
+Then run it with the `anycloud job` flags shown above.
 
 - **`--platform linux/amd64` is mandatory.** A plain `docker build` on an Apple Silicon Mac may publish an `arm64` image that pulls fine but can't run on the VM.
 - **GPU images must be Linux-tested.** Start `FROM nvidia/cuda:*`, `pytorch/pytorch:*cuda*`, or an NVIDIA image you've run on Linux — a Mac build won't validate GPU access.
@@ -123,14 +123,16 @@ Then submit it with the `anycloud submit` flags shown above.
 
 Confirm AnyCloud is installed, logged in, has the local API running, and has at least one cloud credential configured. Stop at the first failure and resolve before continuing.
 
-| Check                       | Output                             | Next action                                                     |
-| --------------------------- | ---------------------------------- | --------------------------------------------------------------- |
-| `anycloud --version`        | Version printed                    | Continue                                                        |
-|                             | `command not found: anycloud`      | Install: `curl -fsSL https://get.anycloud.sh \| sh`             |
-| `anycloud api status`       | `running`                          | Continue                                                        |
-|                             | `not running` / connection refused | `anycloud api start` (runs the local API as a Docker container) |
-| `anycloud credentials list` | Non-empty list                     | Continue                                                        |
-|                             | Empty                              | Add a credential — see "Credentials" below                      |
+| Check                       | Output                             | Next action                                                                                                     |
+| --------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------- |
+| `anycloud --version`        | Version printed                    | Continue                                                                                                        |
+|                             | `command not found: anycloud`      | Install: `curl -fsSL https://get.anycloud.sh \| sh`                                                             |
+| `anycloud job --help`       | Help printed                       | Continue                                                                                                        |
+|                             | `unknown command`                  | `anycloud update` — this CLI predates the `job` / `service` names; older releases spell them `submit` / `serve` |
+| `anycloud api status`       | `running`                          | Continue                                                                                                        |
+|                             | `not running` / connection refused | `anycloud api start` (runs the local API as a Docker container)                                                 |
+| `anycloud credentials list` | Non-empty list                     | Continue                                                                                                        |
+|                             | Empty                              | Add a credential — see "Credentials" below                                                                      |
 
 Bootstrap done. Skip to the user's task.
 
@@ -165,12 +167,12 @@ Create a named secret bundle first, then inject it with `--secret <name>` (value
 ```bash
 anycloud secrets new hf HF_TOKEN=hf_xxx     # create (repeatable KEY=VALUE)
 anycloud secrets list                       # names only, no values
-anycloud submit ghcr.io/acme/app:latest --secret hf -- python train.py
+anycloud job ghcr.io/acme/app:latest --secret hf -- python train.py
 ```
 
 ## Common Flags
 
-For `anycloud submit`:
+For `anycloud job`:
 
 | Flag                      | Effect                                                                                                                 |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
@@ -180,7 +182,7 @@ For `anycloud submit`:
 | `--shm-size <size>`       | Shared memory (e.g. `8g`). Bump for PyTorch DataLoader / NCCL, else multi-GPU can hang.                                |
 | `--credentials <name>`    | Cloud credentials to use. Repeatable for an ordered fallback list.                                                     |
 | `--region <region>`       | Pin to a cloud region.                                                                                                 |
-| `--input-bucket <name>`   | Read-only mount at `/mnt/input`. **Must exist + be populated before submit** — see Moving data.                        |
+| `--input-bucket <name>`   | Read-only mount at `/mnt/input`. **Must exist + be populated before the Job starts** — see Moving data.                |
 | `--output-bucket <name>`  | Mount as `/mnt/output`. Auto-created if missing. On `--spot`, a per-deployment checkpoint bucket is also auto-created. |
 | `-e KEY=VALUE` / `-e KEY` | Env var. `-e KEY` reads from the current shell. Repeatable.                                                            |
 | `--env-file <file>`       | Load env vars from a `.env` file. Flags take precedence over file entries.                                             |
@@ -195,7 +197,7 @@ CI-friendly env-driven workflow:
 ```bash
 GITHUB_TOKEN=ghp_... \
 ANYCLOUD_CREDENTIALS_NAME=my-aws \
-  anycloud submit ghcr.io/acme/my-app:latest \
+  anycloud job ghcr.io/acme/my-app:latest \
   --gpu-type h100 --spot
 ```
 
@@ -203,7 +205,7 @@ ANYCLOUD_CREDENTIALS_NAME=my-aws \
 
 Three mount points, synced automatically — request them with `--input-bucket` / `--output-bucket`:
 
-- `/mnt/input` — **read-only, and the bucket must exist + be populated before you submit.** Create and fill it first: `anycloud bucket create <name> --credentials <cred>`, then `anycloud bucket upload <name> <local> <remote> --credentials <cred>`.
+- `/mnt/input` — **read-only, and the bucket must exist + be populated before the Job starts.** Create and fill it first: `anycloud bucket create <name> --credentials <cred>`, then `anycloud bucket upload <name> <local> <remote> --credentials <cred>`.
 - `/mnt/output` — read-write, **auto-created**; uploads to the cloud every ~60s. Fetch results after with `anycloud bucket download <name> <remote> <local> --credentials <cred>`.
 - `/mnt/checkpoint` — auto-created per deployment on `--spot`; downloaded on startup, uploaded ~60s. **Your code must read it on startup and write to it** to actually resume after preemption.
 
@@ -222,11 +224,11 @@ anycloud pricing aws p5.48xlarge --region us-east-1  # one region
 
 Add `--json` to any of these for machine-readable output.
 
-To answer "what's the cheapest H100 across clouds," run `anycloud gpus` / `pricing` per provider and compare. Or just submit with `--gpu-type h100 --spot` and let AnyCloud's optimizer place it on the cheapest available GPU at submit time — don't hardcode a cloud/region unless the workload requires it. `--gpu-type` is repeatable for a fallback pool (`--gpu-type h100 --gpu-type a100`); `--gpus all` uses every GPU on the VM, `--gpus 8` an exact count.
+To answer "what's the cheapest H100 across clouds," run `anycloud gpus` / `pricing` per provider and compare. Or just run a Job with `--gpu-type h100 --spot` and let AnyCloud's optimizer place it on the cheapest available GPU at dispatch time — don't hardcode a cloud/region unless the workload requires it. `--gpu-type` is repeatable for a fallback pool (`--gpu-type h100 --gpu-type a100`); `--gpus all` uses every GPU on the VM, `--gpus 8` an exact count.
 
 ### When a region is out of capacity
 
-If a submit fails because the cloud has no quota for the GPU, request an increase:
+If a Job fails because the cloud has no quota for the GPU, request an increase:
 
 ```bash
 anycloud quota request --gpu H100 --credential my-aws          # fans out across regions
@@ -249,7 +251,7 @@ anycloud spend show                               # remaining headroom across al
 anycloud cost [<id>] [--period 1d..90d]           # job + server spend, after the fact
 ```
 
-**A hit cap doesn't fail `submit`** — it returns an id, but the deployment stays `Queued` with a `blocked by throttle|budget …` reason in `anycloud status` / `ls`, then dispatches automatically once the cap clears (a VM ends, the window rolls over, or you raise the cap). Don't mistake a spend-blocked job for a stuck one — check `status`.
+**A hit cap doesn't fail `job`** — it returns an id, but the deployment stays `Queued` with a `blocked by throttle|budget …` reason in `anycloud status` / `ls`, then dispatches automatically once the cap clears (a VM ends, the window rolls over, or you raise the cap). Don't mistake a spend-blocked job for a stuck one — check `status`.
 
 **Scopes:** account-wide (default — counts human submits too) or `--agent-session` (only the current agent run). For an agent submitting autonomously, set an `--agent-session` `budget` and/or `throttle` cap first as your guardrail.
 
@@ -286,15 +288,15 @@ anycloud db query "SELECT id, state FROM deployments ORDER BY started_at DESC LI
 anycloud db query "SELECT * FROM deployment_events WHERE deployment_id = '<id>'" --json
 ```
 
-Only `SELECT` / `WITH` / `EXPLAIN` / `PRAGMA` run; results cap at 10,000 rows (`--json` sets `truncated: true` when the cap fires — add `LIMIT`). Don't hardcode columns — run `anycloud db schema --json` to introspect, since the schema can change between releases. Mutate state with the regular commands (`submit` / `terminate` / `resubmit`), never SQL.
+Only `SELECT` / `WITH` / `EXPLAIN` / `PRAGMA` run; results cap at 10,000 rows (`--json` sets `truncated: true` when the cap fires — add `LIMIT`). Don't hardcode columns — run `anycloud db schema --json` to introspect, since the schema can change between releases. Mutate state with the regular commands (`job` / `terminate` / `resubmit`), never SQL.
 
 ## Pitfalls
 
 - **Private registries: GHCR only.** Public images on any registry work without auth. Private images must be on GHCR (auth via `anycloud login` GitHub OAuth). Docker Hub / ECR / Artifact Registry private images aren't supported — push to GHCR or make the image public.
 - **Docker daemon required locally** for `anycloud api start` and for building/pushing your own image. Image validation runs server-side, so submitting a prebuilt image doesn't need local Docker.
 - **Bucket names are globally unique per cloud.** Pick something distinctive or let AnyCloud auto-generate.
-- **GPU count: `--gpus all` vs `--gpus 8` (CLI), `gpu="h100:8"` (SDK).** On `anycloud submit`, `--gpus all` uses every GPU on whatever VM is provisioned (varies by quota); use an explicit count when N matters. In the Python decorator, give an explicit `gpu="<type>:<count>"`.
-- **Multi-cloud picks cheapest at submit time** — same job may land on different providers across runs unless `--credentials` or `--region` constrains it.
+- **GPU count: `--gpus all` vs `--gpus 8` (CLI), `gpu="h100:8"` (SDK).** On `anycloud job`, `--gpus all` uses every GPU on whatever VM is provisioned (varies by quota); use an explicit count when N matters. In the Python decorator, give an explicit `gpu="<type>:<count>"`.
+- **Multi-cloud picks cheapest at dispatch time** — the same Job may land on different providers across runs unless `--credentials` or `--region` constrains it.
 - **`--persist` doesn't auto-stop** the VM. The user pays for it until they `anycloud terminate <id>`.
 - **Agent runs are session-scoped.** Invoked non-interactively (as you are), `anycloud ls` / `status` list only the current agent session's deployments — an empty list doesn't mean no jobs exist. Pass `--session <id>` or `--agent <name>` to widen.
 
