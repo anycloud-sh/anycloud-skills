@@ -190,7 +190,7 @@ For `anycloud job`:
 | `--persist`               | Keep VM alive after the job exits — for exec / debug.                                                                  |
 | `-i, --id <id>`           | Custom deployment ID (otherwise auto-generated).                                                                       |
 
-Other Docker-runtime / targeting flags: `--memory`, `--cpus`, `--ipc`, `--runtime`, `--disk-size`, `--vm-type` (repeatable, explicit instance types), `--zone`, `--persist-bucket` — see the CLI reference.
+Other Docker-runtime / targeting flags: `--memory`, `--cpus`, `--ipc`, `--runtime`, `--disk-size`, `--vm-type` (repeatable, explicit instance types), `--zone` — see the CLI reference.
 
 CI-friendly env-driven workflow:
 
