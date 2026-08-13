@@ -187,7 +187,6 @@ For `anycloud job`:
 | `-e KEY=VALUE` / `-e KEY` | Env var. `-e KEY` reads from the current shell. Repeatable.                                                            |
 | `--env-file <file>`       | Load env vars from a `.env` file. Flags take precedence over file entries.                                             |
 | `--secret <name>`         | Inject a named secret as env vars (create with `anycloud secrets new`). Repeatable.                                    |
-| `--persist`               | Keep VM alive after the job exits — for exec / debug.                                                                  |
 | `-i, --id <id>`           | Custom deployment ID (otherwise auto-generated).                                                                       |
 
 Other Docker-runtime / targeting flags: `--memory`, `--cpus`, `--ipc`, `--runtime`, `--disk-size`, `--vm-type` (repeatable, explicit instance types), `--zone` — see the CLI reference.
@@ -272,7 +271,7 @@ anycloud exec <id> "tail -n 100 train.log"
 **Workflow when a job fails:**
 
 1. `anycloud status <id> --verbose` — read events, error details, and logs.
-2. If environment-related, resubmit with `--persist` and `anycloud exec <id> "<command>"` to inspect the live environment.
+2. If environment-related, `anycloud exec <id> "<command>"` while the job is still running to inspect the live environment.
 3. For spot preemption, AnyCloud re-provisions and restores `/mnt/checkpoint` automatically — but it only resumes work if your code reads/writes checkpoints there (see Moving data); otherwise it restarts from scratch.
 4. `anycloud resubmit <id>` — re-queue a terminated deployment with the same config.
 5. Need a detail `status` / `ls` don't surface (events, timing, cross-deployment aggregates)? Query it read-only with `anycloud db query` (see below).
@@ -297,7 +296,7 @@ Only `SELECT` / `WITH` / `EXPLAIN` / `PRAGMA` run; results cap at 10,000 rows (`
 - **Bucket names are globally unique per cloud.** Pick something distinctive or let AnyCloud auto-generate.
 - **GPU count: `--gpus all` vs `--gpus 8` (CLI), `gpu="h100:8"` (SDK).** On `anycloud job`, `--gpus all` uses every GPU on whatever VM is provisioned (varies by quota); use an explicit count when N matters. In the Python decorator, give an explicit `gpu="<type>:<count>"`.
 - **Multi-cloud picks cheapest at dispatch time** — the same Job may land on different providers across runs unless `--credentials` or `--region` constrains it.
-- **`--persist` doesn't auto-stop** the VM. The user pays for it until they `anycloud terminate <id>`.
+- **A Job's VM is released when it finishes.** Inspect a running job with `anycloud exec` / `anycloud ssh` before it exits; afterwards, read `anycloud status <id> --verbose` and `anycloud logs <id>`.
 - **Agent runs are session-scoped.** Invoked non-interactively (as you are), `anycloud ls` / `status` list only the current agent session's deployments — an empty list doesn't mean no jobs exist. Pass `--session <id>` or `--agent <name>` to widen.
 
 ## Reference
