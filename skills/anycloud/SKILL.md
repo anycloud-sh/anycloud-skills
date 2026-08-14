@@ -1,6 +1,6 @@
 ---
 name: anycloud
-description: "Use when training, fine-tuning, evaluating, or running batch inference on AI models that need a cloud GPU (H100, A100, B200, L40S, etc.); running hyperparameter sweeps; preprocessing large datasets that don't fit on a laptop; submitting any containerized batch job to a remote VM; comparing GPU prices or finding the cheapest H100/A100 across AWS, GCP, Azure, Lambda, CoreWeave, and other providers; using spot/preemptible instances for cost savings with automatic checkpoint recovery; getting AI workloads running on multi-cloud BYOC infrastructure; or monitoring, debugging, and inspecting AnyCloud jobs already submitted — checking deployment status and logs, tracking spend, or querying deployment state and events directly with read-only SQL when no dedicated command exposes what you need."
+description: 'Use when training, fine-tuning, evaluating, or running batch inference on cloud GPUs; running sweeps or large preprocessing jobs; creating a persistent cloud VM with container and host access; deploying a long-running Anycloud Service; comparing GPU prices across AWS, GCP, Azure, Lambda, and other providers; using spot instances with checkpoint recovery; or monitoring, debugging, operating, and tracking spend for Anycloud Jobs, Services, and VMs.'
 allowed-tools:
   - Bash
   - Read
@@ -8,7 +8,10 @@ allowed-tools:
 
 # AnyCloud
 
-AnyCloud is a multi-cloud orchestrator for AI batch jobs. It finds the cheapest available GPU across the user's connected clouds (AWS, GCP, Azure, Lambda, CoreWeave, and others) and runs a containerized workload there. The user brings their own cloud accounts (BYOC); AnyCloud does not host compute.
+AnyCloud is a multi-cloud orchestrator for containerized Jobs, Services, and
+persistent VMs. It finds suitable compute across the user's
+connected clouds (AWS, GCP, Azure, Lambda, and others) and provisions it in the
+user's own account (BYOC); AnyCloud does not host compute.
 
 ## When to Use AnyCloud
 
@@ -18,19 +21,20 @@ AnyCloud is a multi-cloud orchestrator for AI batch jobs. It finds the cheapest 
 - Run a hyperparameter sweep or batch inference across many runs
 - Preprocess a dataset that's too big for their laptop
 - Submit any containerized batch job to a remote VM with or without a GPU
+- Create a persistent VM for interactive Docker, Git, and shell work
 - Compare GPU prices across clouds and pick the cheapest
 - Use spot/preemptible instances with automatic checkpoint recovery
 - Monitor, debug, or inspect deployments already submitted — status, logs, spend, events, or ad-hoc read-only SQL queries on deployment state
 
 **Don't use AnyCloud for:**
 
-- Long-running HTTP servers or inference endpoints — those use `anycloud service` (deploys a server and prints a public URL at `https://<id>.anycloud.sh`), or `anycloud api serve` for a hosted AnyCloud control plane. This skill walks through **batch jobs**; `anycloud service` is a sibling capability it doesn't cover.
+- Using a VM as a managed production endpoint — use `anycloud service` for a long-running HTTP Server, or `anycloud api serve` for a hosted Anycloud control plane.
 - Local-only workloads (run locally with Docker / Python directly).
 - Workloads that need to stay on a specific cloud for compliance — AnyCloud will pick the cheapest, which may move providers between runs unless constrained.
 
 ## Capabilities: When to Use What
 
-Two ways to get code onto the VM — pick by whether you need a custom image:
+Choose the workload shape first, then decide whether a Job needs a custom image:
 
 - **No build:** the `@anycloud.function` decorator git-syncs your code onto a stock public image (e.g. `pytorch/pytorch:*cuda*`) at run time — use when an off-the-shelf image already has your deps + `git`. (Workflow 1 below.)
 - **Build your own image:** bake code + deps into a hermetic image, push to GHCR, then `anycloud job` — for non-Python, CI, or when no public image fits. (Workflow 2 + "Building and pushing your image" below.)
@@ -83,6 +87,33 @@ anycloud job ghcr.io/acme/my-training:latest \
 ```
 
 `anycloud login` logs your local Docker CLI into GHCR, so private GHCR images pull automatically. On VM-backed providers, deployments start from the provider base image and pull the requested image reference; some retry paths can reuse an existing VM.
+
+### 3. Persistent VM — interactive Docker environment
+
+Use when the user wants a long-lived interactive machine rather than a finite
+Job or a managed HTTP Service:
+
+```bash
+anycloud vm new ghcr.io/acme/dev:latest --credentials my-aws --vm-type t3.large
+anycloud ssh <id>             # VM container
+anycloud ssh <id> --host      # underlying host
+```
+
+The image is required; Anycloud does not provide a default. It must provide
+`/bin/sh` and POSIX `sleep` and tolerate entrypoint, command, and working-
+directory replacement. The image supplies all optional development tooling,
+including a Docker CLI when the user wants to control host Docker. VMs are
+SSH-only and do not publish a managed HTTP endpoint; use a Service when a stable
+public URL is required.
+
+Treat the host as the persistence and trust boundary. `/workspace` survives VM
+container recreation and host reboot, but `terminate` destroys it with the VM
+disk. The image's configured user and `HOME` are preserved. The
+mounted rootful Docker socket gives the container host-level control, so this
+is not a security sandbox. A stopped container stays stopped; recover it with
+`ssh --host` and `docker start <id>`. VMs do not support spot, buckets, startup
+commands, arbitrary Docker flags, resubmit, snapshots, or automatic host
+replacement.
 
 ## Building and pushing your image
 
@@ -247,7 +278,7 @@ anycloud throttle set 20                          # $20/hr at any instant
 anycloud budget set 1000 --per month              # window: day | week | month
 anycloud budget set 50 --per day --agent-session  # scope a cap to THIS agent run only
 anycloud spend show                               # remaining headroom across all caps
-anycloud cost [<id>] [--period 1d..90d]           # job + server spend, after the fact
+anycloud cost [<id>] [--period 1d..90d]           # Job + Server + VM spend
 ```
 
 **A hit cap doesn't fail `job`** — it returns an id, but the deployment stays `Queued` with a `blocked by throttle|budget …` reason in `anycloud status` / `ls`, then dispatches automatically once the cap clears (a VM ends, the window rolls over, or you raise the cap). Don't mistake a spend-blocked job for a stuck one — check `status`.
@@ -303,6 +334,7 @@ Only `SELECT` / `WITH` / `EXPLAIN` / `PRAGMA` run; results cap at 10,000 rows (`
 
 - Install + first job: https://anycloud.sh/getting-started
 - CLI reference: https://anycloud.sh/reference/cli-reference
+- VM reference: https://anycloud.sh/reference/cli/vm
 - Python SDK: https://anycloud.sh/reference/python-sdk
 - Build & push images (Docker/GHCR): https://anycloud.sh/platform/container-images
 - Spot instances guide: https://anycloud.sh/platform/jobs#spot-recovery
