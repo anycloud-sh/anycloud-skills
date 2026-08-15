@@ -26,7 +26,7 @@ The skill follows the open Agent Skills spec. Tell your agent:
 
 The skill bootstraps the anycloud CLI on first use. The user will need:
 
-1. anycloud installed: `curl -fsSL https://get.anycloud.sh | sh`
+1. anycloud installed: `brew install anycloud-sh/tap/anycloud` (or follow the [manual install guide](https://anycloud.sh/getting-started/))
 2. Logged in: `anycloud login` (GitHub OAuth)
 3. Local API running: `anycloud api start`
 4. At least one cloud credential: `anycloud credentials new`

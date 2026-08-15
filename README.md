@@ -35,7 +35,7 @@ Teaches the agent how to:
 
 ## Requirements
 
-- [anycloud CLI](https://anycloud.sh/docs/getting-started) installed (`curl -fsSL https://get.anycloud.sh | sh`)
+- [anycloud CLI](https://anycloud.sh/getting-started/) installed (`brew install anycloud-sh/tap/anycloud` on macOS/Linuxbrew)
 - A cloud credential added (`anycloud credentials new`). The user brings their own AWS / GCP / Azure / Lambda account; anycloud doesn't host compute.
 
 ## Scope

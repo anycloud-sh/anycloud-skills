@@ -154,16 +154,16 @@ Then run it with the `anycloud job` flags shown above.
 
 Confirm AnyCloud is installed, logged in, has the local API running, and has at least one cloud credential configured. Stop at the first failure and resolve before continuing.
 
-| Check                       | Output                             | Next action                                                                                                     |
-| --------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------- |
-| `anycloud --version`        | Version printed                    | Continue                                                                                                        |
-|                             | `command not found: anycloud`      | Install: `curl -fsSL https://get.anycloud.sh \| sh`                                                             |
-| `anycloud job --help`       | Help printed                       | Continue                                                                                                        |
-|                             | `unknown command`                  | `anycloud update` — this CLI predates the `job` / `service` names; older releases spell them `submit` / `serve` |
-| `anycloud api status`       | `running`                          | Continue                                                                                                        |
-|                             | `not running` / connection refused | `anycloud api start` (runs the local API as a Docker container)                                                 |
-| `anycloud credentials list` | Non-empty list                     | Continue                                                                                                        |
-|                             | Empty                              | Add a credential — see "Credentials" below                                                                      |
+| Check                       | Output                             | Next action                                                                                                           |
+| --------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `anycloud --version`        | Version printed                    | Continue                                                                                                              |
+|                             | `command not found: anycloud`      | Install with Homebrew: `brew install anycloud-sh/tap/anycloud`; otherwise follow https://anycloud.sh/getting-started/ |
+| `anycloud job --help`       | Help printed                       | Continue                                                                                                              |
+|                             | `unknown command`                  | `anycloud update` — this CLI predates the `job` / `service` names; older releases spell them `submit` / `serve`       |
+| `anycloud api status`       | `running`                          | Continue                                                                                                              |
+|                             | `not running` / connection refused | `anycloud api start` (runs the local API as a Docker container)                                                       |
+| `anycloud credentials list` | Non-empty list                     | Continue                                                                                                              |
+|                             | Empty                              | Add a credential — see "Credentials" below                                                                            |
 
 Bootstrap done. Skip to the user's task.
 
@@ -184,19 +184,22 @@ The wizard for AWS / GCP can read an existing local profile (`~/.aws/credentials
 **Non-interactive (CI or scripted):**
 
 ```bash
-# AWS — other providers: --provider azure|gcp|lambda (see `anycloud credentials new --help`)
-anycloud credentials new my-aws --provider aws \
-  --access-key-id AKIA... --secret-access-key ...
+# Populate the documented provider variables from the CI secret store first.
+anycloud credentials new my-aws --provider aws
 ```
 
-Secret values also accept an env-var fallback (e.g. `AWS_SECRET_ACCESS_KEY`, `GCP_PRIVATE_KEY`, `LAMBDA_API_KEY`); the flag wins when both are provided.
+Secret values accept provider-specific environment-variable fallbacks; see
+`anycloud credentials new --help` for the names. Never ask the user to paste
+credential values into chat or emit them in an agent-generated command.
 
 ## Secrets
 
-Create a named secret bundle first, then inject it with `--secret <name>` (values are write-only — never returned, unlike `-e`):
+Secret values are write-only and never returned. Do not ask the user to paste
+them into chat or put them in an agent-generated command. Ask the user to create
+a named bundle privately in their terminal using `anycloud secrets new --help`,
+then inject only the bundle name:
 
 ```bash
-anycloud secrets new hf HF_TOKEN=hf_xxx     # create (repeatable KEY=VALUE)
 anycloud secrets list                       # names only, no values
 anycloud job ghcr.io/acme/app:latest --secret hf -- python train.py
 ```
@@ -222,14 +225,8 @@ For `anycloud job`:
 
 Other Docker-runtime / targeting flags: `--memory`, `--cpus`, `--ipc`, `--runtime`, `--disk-size`, `--vm-type` (repeatable, explicit instance types), `--zone` — see the CLI reference.
 
-CI-friendly env-driven workflow:
-
-```bash
-GITHUB_TOKEN=ghp_... \
-ANYCLOUD_CREDENTIALS_NAME=my-aws \
-  anycloud job ghcr.io/acme/my-app:latest \
-  --gpu-type h100 --spot
-```
+For CI, provide authentication through the CI platform's secret store before
+running `anycloud`; never place token values in workflow commands or logs.
 
 ## Moving data (buckets)
 
