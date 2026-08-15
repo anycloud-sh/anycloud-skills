@@ -28,7 +28,7 @@ user's own account (BYOC); AnyCloud does not host compute.
 
 **Don't use AnyCloud for:**
 
-- Using a VM as a managed production endpoint — use `anycloud service` for a long-running HTTP Server, or `anycloud api serve` for a hosted Anycloud control plane.
+- Using a VM as a managed production endpoint — use `anycloud service` for a long-running HTTP Service, or `anycloud api serve` for a hosted Anycloud control plane.
 - Local-only workloads (run locally with Docker / Python directly).
 - Workloads that need to stay on a specific cloud for compliance — AnyCloud will pick the cheapest, which may move providers between runs unless constrained.
 
@@ -275,7 +275,7 @@ anycloud throttle set 20                          # $20/hr at any instant
 anycloud budget set 1000 --per month              # window: day | week | month
 anycloud budget set 50 --per day --agent-session  # scope a cap to THIS agent run only
 anycloud spend show                               # remaining headroom across all caps
-anycloud cost [<id>] [--period 1d..90d]           # Job + Server + VM spend
+anycloud cost [<id>] [--period 1d..90d]           # Job + Service + VM spend
 ```
 
 **A hit cap doesn't fail `job`** — it returns an id, but the deployment stays `Queued` with a `blocked by throttle|budget …` reason in `anycloud status` / `ls`, then dispatches automatically once the cap clears (a VM ends, the window rolls over, or you raise the cap). Don't mistake a spend-blocked job for a stuck one — check `status`.

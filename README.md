@@ -40,7 +40,7 @@ Teaches the agent how to:
 
 ## Scope
 
-This skill is for **AI batch workloads** — training, fine-tuning, evals, batch inference, dataset preprocessing. It does not cover long-running HTTP server deployments.
+This skill is for **AI batch workloads** — training, fine-tuning, evals, batch inference, dataset preprocessing. It does not cover long-running HTTP Service deployments.
 
 ## License
 
