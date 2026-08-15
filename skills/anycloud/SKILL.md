@@ -34,45 +34,13 @@ user's own account (BYOC); AnyCloud does not host compute.
 
 ## Capabilities: When to Use What
 
-Choose the workload shape first, then decide whether a Job needs a custom image:
+Choose the workload shape first. Jobs and Services run published container
+images containing the application code and dependencies.
 
-- **No build:** the `@anycloud.function` decorator git-syncs your code onto a stock public image (e.g. `pytorch/pytorch:*cuda*`) at run time — use when an off-the-shelf image already has your deps + `git`. (Workflow 1 below.)
-- **Build your own image:** bake code + deps into a hermetic image, push to GHCR, then `anycloud job` — for non-Python, CI, or when no public image fits. (Workflow 2 + "Building and pushing your image" below.)
+### 1. Job — finite container workload
 
-### 1. Python `@anycloud.function` decorator — git-sync, fast iteration
-
-Use when the user is iterating on Python code frequently. The decorator clones the user's repo onto the VM at the current commit; the image holds dependencies. No image rebuild between runs; function arguments are passed directly.
-
-Requires: code committed and pushed to GitHub, `git` installed in the base image.
-
-```python
-import anycloud
-from anycloud.types import CloudConfig
-
-@anycloud.function(
-    image="ghcr.io/acme/base:latest",   # base image with deps, NOT the code
-    gpu="h100:8",                       # gpu_type:count
-    cloud_config=CloudConfig(
-        credentials="my-aws",
-        spot=True,
-        input_bucket="training-data",   # read-only; create + upload before run
-        output_bucket="results",
-    ),
-)
-def train(lr: float, epochs: int = 100):
-    import torch
-    data = torch.load("/mnt/input/dataset.pt")
-    # ... training loop ...
-    torch.save(model.state_dict(), "/mnt/output/model.pt")
-
-job = train.submit(0.001, epochs=50, id="lr-sweep-1e-3")
-job.wait()
-print(job.logs())
-```
-
-### 2. Bring your own image + `anycloud job` — hermetic image
-
-Use for non-Python workloads, CI pipelines, or any workload where the code should be baked into the image. Build and push the image yourself (laptop or CI), then run the reference. One build, many runs.
+Use for training, evaluation, preprocessing, batch inference, and other work
+that should exit. Build and push the image yourself, then run the reference:
 
 ```bash
 anycloud job ghcr.io/acme/my-training:latest \
@@ -87,6 +55,41 @@ anycloud job ghcr.io/acme/my-training:latest \
 ```
 
 `anycloud login` logs your local Docker CLI into GHCR, so private GHCR images pull automatically. On VM-backed providers, deployments start from the provider base image and pull the requested image reference; some retry paths can reuse an existing VM.
+
+The equivalent Python SDK submission is:
+
+```python
+import anycloud
+
+ac = anycloud.Client()
+job = ac.submit(
+    "ghcr.io/acme/my-training:latest",
+    gpu="h100:8",
+    cloud_config=anycloud.CloudConfig(
+        credentials="my-aws",
+        spot=True,
+        input_bucket="training-data",
+        output_bucket="results",
+    ),
+    command=["python", "train.py", "--lr", "0.001", "--epochs", "50"],
+    deployment_id="lr-sweep-1e-3",
+)
+job.wait()
+print(job.logs())
+```
+
+### 2. Service — long-running HTTP workload
+
+Use when the process should listen on `PORT` and remain available at a stable
+URL:
+
+```bash
+anycloud service ghcr.io/acme/model-api:latest \
+    --id model-api \
+    --credentials my-aws \
+    --gpu-type l40s \
+    -- python -m myapp
+```
 
 ### 3. Persistent VM — interactive Docker environment
 
@@ -119,7 +122,9 @@ replacement.
 
 Building and pushing is plain Docker — the only AnyCloud command in this step is `anycloud login`, which logs your local Docker CLI into GHCR so pushes (and later private pulls) just work. AnyCloud runs a prebuilt image; it does not build one for you.
 
-**Build only for deps no off-the-shelf image provides** — otherwise run a public image directly or git-sync via the decorator (the two paths above).
+Use a public image directly only when its existing contents plus the submitted
+command are the complete workload. Otherwise build application code and
+dependencies into a custom image.
 
 A minimal `Dockerfile`:
 
@@ -322,7 +327,7 @@ Only `SELECT` / `WITH` / `EXPLAIN` / `PRAGMA` run; results cap at 10,000 rows (`
 - **Private registries: GHCR only.** Public images on any registry work without auth. Private images must be on GHCR (auth via `anycloud login` GitHub OAuth). Docker Hub / ECR / Artifact Registry private images aren't supported — push to GHCR or make the image public.
 - **Docker daemon required locally** for `anycloud api start` and for building/pushing your own image. Image validation runs server-side, so submitting a prebuilt image doesn't need local Docker.
 - **Bucket names are globally unique per cloud.** Pick something distinctive or let AnyCloud auto-generate.
-- **GPU count: `--gpus all` vs `--gpus 8` (CLI), `gpu="h100:8"` (SDK).** On `anycloud job`, `--gpus all` uses every GPU on whatever VM is provisioned (varies by quota); use an explicit count when N matters. In the Python decorator, give an explicit `gpu="<type>:<count>"`.
+- **GPU count: `--gpus all` vs `--gpus 8` (CLI), `gpu="h100:8"` (SDK).** On `anycloud job`, `--gpus all` uses every GPU on whatever VM is provisioned (varies by quota); use an explicit count when N matters. In the Python SDK, pass an explicit `gpu="<type>:<count>"` to `Client.submit()` or `Client.serve()`.
 - **Multi-cloud picks cheapest at dispatch time** — the same Job may land on different providers across runs unless `--credentials` or `--region` constrains it.
 - **A Job's VM is released when it finishes.** Inspect a running job with `anycloud exec` / `anycloud ssh` before it exits; afterwards, read `anycloud status <id> --verbose` and `anycloud logs <id>`.
 - **Agent runs are session-scoped.** Invoked non-interactively (as you are), `anycloud ls` / `status` list only the current agent session's deployments — an empty list doesn't mean no jobs exist. Pass `--session <id>` or `--agent <name>` to widen.
