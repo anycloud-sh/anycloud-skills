@@ -97,7 +97,7 @@ Use when the user wants a long-lived interactive machine rather than a finite
 Job or a managed HTTP Service:
 
 ```bash
-anycloud vm new ghcr.io/acme/dev:latest --credentials my-aws --vm-type t3.large
+anycloud vm ghcr.io/acme/dev:latest --credentials my-aws --vm-type t3.large
 anycloud ssh <id>             # VM container
 anycloud ssh <id> --host      # underlying host
 ```
