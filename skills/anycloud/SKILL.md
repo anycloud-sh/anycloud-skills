@@ -184,7 +184,7 @@ The user brings their own cloud account. AnyCloud stores credentials locally; th
 anycloud credentials new            # picks provider + walks through setup
 ```
 
-The wizard for AWS / GCP can read an existing local profile (`~/.aws/credentials`, GCP ADC) or auto-provision a new least-privilege IAM user by calling the local `aws` / `gcloud` CLI. Azure is service-principal-only (its CLI session is user-auth, not reusable as a SP secret).
+The wizard can import durable static AWS access-key profiles and GCP service-account key JSON, accept existing provider values, or explicitly create an Azure service principal with the logged-in Azure CLI. AWS SSO, role, session-token, and other indirect profiles cannot be imported, GCP user ADC is not durable service-account material, and AWS/GCP `--generate` is unsupported.
 
 **Non-interactive (CI or scripted):**
 
