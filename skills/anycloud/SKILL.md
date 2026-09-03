@@ -102,12 +102,16 @@ anycloud ssh <id>             # VM container
 anycloud ssh <id> --host      # underlying host
 ```
 
-The image is required; Anycloud does not provide a default. It must provide
+The image is required; Anycloud does not provide a default. In a non-interactive
+agent run, omitting it exits before creating resources and prints the current
+recommended CPU and NVIDIA GPU image references with friendly titles. Retry
+with the appropriate full image reference unless the user supplied or preferred
+another image; the friendly title is not an alias. The image must provide
 `/bin/sh` and POSIX `sleep` and tolerate entrypoint, command, and working-
-directory replacement. The image supplies all optional development tooling,
-including a Docker CLI when the user wants to control host Docker. VMs are
-SSH-only and do not publish a managed HTTP endpoint; use a Service when a stable
-public URL is required.
+directory replacement. It supplies all optional development tooling, including
+a Docker CLI when the user wants to control host Docker. VMs are SSH-only and
+do not publish a managed HTTP endpoint; use a Service when a stable public URL
+is required.
 
 Treat the host as the persistence and trust boundary. `/workspace` survives VM
 container recreation and host reboot, but `terminate` destroys it with the VM
