@@ -56,26 +56,34 @@ anycloud job ghcr.io/acme/my-training:latest \
 
 `anycloud login` logs your local Docker CLI into GHCR, so private GHCR images pull automatically. On VM-backed providers, deployments start from the provider base image and pull the requested image reference; some retry paths can reuse an existing VM.
 
-The equivalent Python SDK submission is:
+The equivalent generated Python SDK request is:
 
 ```python
-import anycloud
+from importlib.metadata import version
 
-ac = anycloud.Client()
-job = ac.submit(
-    "ghcr.io/acme/my-training:latest",
-    gpu="h100:8",
-    cloud_config=anycloud.CloudConfig(
-        credentials="my-aws",
-        spot=True,
-        input_bucket="training-data",
-        output_bucket="results",
-    ),
-    command=["python", "train.py", "--lr", "0.001", "--epochs", "50"],
-    deployment_id="lr-sweep-1e-3",
+from anycloud.api.deployment_admission_api import DeploymentAdmissionApi
+from anycloud.api_client import ApiClient
+from anycloud.configuration import Configuration
+from anycloud.models.deployment_admission_input import DeploymentAdmissionInput
+
+sdk_version = version("anycloud-sdk")
+client = ApiClient(Configuration(access_token="github-access-token"))
+job = DeploymentAdmissionApi(client).submit_deployment_sync(
+    sdk_version,
+    DeploymentAdmissionInput.from_dict({
+        "id": "lr-sweep-1e-3",
+        "image": "ghcr.io/acme/my-training:latest",
+        "gpuType": "h100:8",
+        "credentialName": "my-aws",
+        "cloudConfig": {
+            "spot": True,
+            "inputBucket": "training-data",
+            "outputBucket": "results",
+        },
+        "command": ["python", "train.py", "--lr", "0.001", "--epochs", "50"],
+    }),
 )
-job.wait()
-print(job.logs())
+print(job.id)
 ```
 
 ### 2. Service — long-running HTTP workload
@@ -331,7 +339,7 @@ Only `SELECT` / `WITH` / `EXPLAIN` / `PRAGMA` run; results cap at 10,000 rows (`
 - **Private registries: GHCR only.** Public images on any registry work without auth. Private images must be on GHCR (auth via `anycloud login` GitHub OAuth). Docker Hub / ECR / Artifact Registry private images aren't supported — push to GHCR or make the image public.
 - **Docker daemon required locally** for `anycloud api start` and for building/pushing your own image. Image validation runs server-side, so submitting a prebuilt image doesn't need local Docker.
 - **Bucket names are globally unique per cloud.** Pick something distinctive or let AnyCloud auto-generate.
-- **GPU count: `--gpus all` vs `--gpus 8` (CLI), `gpu="h100:8"` (SDK).** On `anycloud job`, `--gpus all` uses every GPU on whatever VM is provisioned (varies by quota); use an explicit count when N matters. In the Python SDK, pass an explicit `gpu="<type>:<count>"` to `Client.submit()` or `Client.serve()`.
+- **GPU count: `--gpus all` vs `--gpus 8` (CLI), `gpuType="h100:8"` (SDK).** On `anycloud job`, `--gpus all` uses every GPU on whatever VM is provisioned (varies by quota); use an explicit count when N matters. In the generated Python admission model, set `gpuType` to `<type>:<count>`.
 - **Multi-cloud picks cheapest at dispatch time** — the same Job may land on different providers across runs unless `--credentials` or `--region` constrains it.
 - **A Job's VM is released when it finishes.** Inspect a running job with `anycloud exec` / `anycloud ssh` before it exits; afterwards, read `anycloud status <id> --verbose` and `anycloud logs <id>`.
 - **Agent runs are session-scoped.** Invoked non-interactively (as you are), `anycloud ls` / `status` list only the current agent session's deployments — an empty list doesn't mean no jobs exist. Pass `--session <id>` or `--agent <name>` to widen.
