@@ -169,7 +169,10 @@ Then run it with the `anycloud job` flags shown above.
 
 ## Before You Start (Agent Bootstrap)
 
-Confirm AnyCloud is installed, logged in, has the local API running, and has at least one cloud credential configured. Stop at the first failure and resolve before continuing.
+Confirm AnyCloud is installed and the selected API is healthy and compatible.
+Use `anycloud api info` to inspect the active target; run the local API checks
+below only for a local target. Check cloud credentials when provisioning cloud
+capacity. Listing existing resources does not require adding credentials.
 
 | Check                       | Output                             | Next action                                                                                                           |
 | --------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
@@ -177,6 +180,8 @@ Confirm AnyCloud is installed, logged in, has the local API running, and has at 
 |                             | `command not found: anycloud`      | Install with Homebrew: `brew install anycloud-sh/tap/anycloud`; otherwise follow https://anycloud.sh/getting-started/ |
 | `anycloud job --help`       | Help printed                       | Continue                                                                                                              |
 |                             | `unknown command`                  | `anycloud update` — this CLI predates the `job` / `service` names; older releases spell them `submit` / `serve`       |
+| `anycloud api info`         | Healthy and compatible active API  | Continue with that target                                                                                             |
+|                             | Unreachable or incompatible        | Resolve the reported connection or version issue for that target                                                      |
 | `anycloud api status`       | `running`                          | Continue                                                                                                              |
 |                             | `not running` / connection refused | `anycloud api start` (runs the local API as a Docker container)                                                       |
 | `anycloud credentials list` | Non-empty list                     | Continue                                                                                                              |
@@ -188,7 +193,9 @@ GitHub auth via `anycloud login` is required for pulling private images from GHC
 
 ## Credentials
 
-The user brings their own cloud account. AnyCloud stores credentials locally; they are never sent to any external service.
+The user brings their own cloud account. Credentials are stored by the active
+API. On a hosted API, authorized teammates can use and manage the shared
+credentials; see https://anycloud.sh/platform/hosted-apis#what-is-shared.
 
 **Interactive wizard (recommended on a terminal):**
 
@@ -223,7 +230,7 @@ anycloud job ghcr.io/acme/app:latest --secret hf -- python train.py
 
 ## Common Flags
 
-For `anycloud job`:
+When submitting a Job from an image (`anycloud job IMAGE`):
 
 | Flag                      | Effect                                                                                                                 |
 | ------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
@@ -299,15 +306,38 @@ anycloud cost [<id>] [--period 1d..90d]           # Job + Service + VM spend
 
 **Scopes:** account-wide (default — counts human submits too) or `--agent-session` (only the current agent run). For an agent submitting autonomously, set an `--agent-session` `budget` and/or `throttle` cap first as your guardrail.
 
+## Listing deployments and Workers
+
+```bash
+anycloud list                                      # recent deployments across all types
+anycloud job list --status failed                  # Jobs only
+anycloud service list --json                       # Services as JSON
+anycloud vm list                                  # VMs only
+anycloud worker list --cluster training --json     # Workers in one Cluster
+anycloud job list --worker <worker-id> -n 400       # more Jobs for one Worker
+```
+
+`job list`, `service list`, and `vm list` accept `ls` aliases and print directly.
+They retain the existing filters, limits, agent session scope, and JSON/CSV/ID
+output. Their deployment type is fixed, so they do not accept `--type`.
+
+`worker list --cluster` accepts a Cluster ID or active name and reads stored
+inventory even when the Cluster is unhealthy. `job list --worker` requires an
+immutable Worker ID and can retrieve historical Jobs after that Worker is
+deleted. Put listing options after `list` or `ls`; `job --worker <id-or-name>`
+submits a new Job instead.
+
+In an interactive terminal, `anycloud list` offers the combined overview and
+Cluster → Worker picker. `anycloud job list --watch` opens that picker and
+refreshes the selected Worker's Jobs; watch cannot be combined with filters or
+machine-readable output.
+
 ## Debugging
 
 ```bash
 anycloud status [<id>]              # status, events, VM info, error details
 anycloud status <id> --verbose      # include detailed logs
 anycloud status <id> --json | jq    # raw JSON for scripts
-
-anycloud ls                         # list active deployments
-anycloud ls --status failed         # filter by exact state
 
 anycloud exec <id> "nvidia-smi"     # run a command in the job execution environment
 anycloud exec <id> "tail -n 100 train.log"
@@ -342,7 +372,8 @@ Only `SELECT` / `WITH` / `EXPLAIN` / `PRAGMA` run; results cap at 10,000 rows (`
 - **GPU count: `--gpus all` vs `--gpus 8` (CLI), `gpuType="h100:8"` (SDK).** On `anycloud job`, `--gpus all` uses every GPU on whatever VM is provisioned (varies by quota); use an explicit count when N matters. In the generated Python admission model, set `gpuType` to `<type>:<count>`.
 - **Multi-cloud picks cheapest at dispatch time** — the same Job may land on different providers across runs unless `--credentials` or `--region` constrains it.
 - **A Job's VM is released when it finishes.** Inspect a running job with `anycloud exec` / `anycloud ssh` before it exits; afterwards, read `anycloud status <id> --verbose` and `anycloud logs <id>`.
-- **Agent runs are session-scoped.** Invoked non-interactively (as you are), `anycloud ls` / `status` list only the current agent session's deployments — an empty list doesn't mean no jobs exist. Pass `--session <id>` or `--agent <name>` to widen.
+- **Agent runs are session-scoped.** In non-interactive agent runs, `list` (including `job list`, `service list`, and `vm list`) and `status` default to the detected session. A Job list with `--worker` keeps that session filter. An empty list does not mean no Jobs exist. Pass `--session <id>` or `--agent <name>` to select another scope.
+- **`list` and `ls` are subcommands.** Under `job`, `service`, `vm`, and their aliases, launch images with these names using a tag, such as `anycloud job list:latest`.
 
 ## Reference
 
