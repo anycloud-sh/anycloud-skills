@@ -1,6 +1,6 @@
 # anycloud-skills
 
-Claude Code / Codex CLI / ChatGPT [Agent Skills](https://code.claude.com/docs/en/skills) for running Jobs, Services, and VMs and inspecting Kubernetes Workers via [anycloud](https://anycloud.sh).
+Claude Code / Codex CLI / ChatGPT [Agent Skills](https://code.claude.com/docs/en/skills) for running Jobs, Services, and VMs and inspecting Kubernetes Deployments via [anycloud](https://anycloud.sh).
 
 ## Install
 
@@ -31,7 +31,7 @@ Teaches the agent how to:
 - Preprocess large datasets that don't fit on a laptop
 - Submit containerized batch jobs to multi-cloud BYOC infrastructure
 - Deploy long-running HTTP Services and create persistent VMs
-- List workloads by type and filter Workers by Cluster or Jobs by Worker
+- List workloads by type and filter Deployments by Cluster or Jobs by Deployment
 - Use spot instances with automatic checkpoint recovery
 - Compare GPU prices across AWS, GCP, Azure, Lambda, CoreWeave, and others
 
@@ -44,7 +44,7 @@ Teaches the agent how to:
 ## Scope
 
 This skill covers creating and operating Jobs, long-running HTTP Services, and
-persistent VMs, plus inspecting Kubernetes Workers and their Jobs.
+persistent VMs, plus inspecting Kubernetes Deployments and their Jobs.
 
 ## License
 

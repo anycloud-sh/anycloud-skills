@@ -306,30 +306,30 @@ anycloud cost [<id>] [--period 1d..90d]           # Job + Service + VM spend
 
 **Scopes:** account-wide (default — counts human submits too) or `--agent-session` (only the current agent run). For an agent submitting autonomously, set an `--agent-session` `budget` and/or `throttle` cap first as your guardrail.
 
-## Listing workloads and Workers
+## Listing workloads and Deployments
 
 ```bash
 anycloud list                                      # recent workloads across all types
 anycloud job list --status failed                  # Jobs only
 anycloud service list --json                       # Services as JSON
 anycloud vm list                                  # VMs only
-anycloud worker list --cluster training --json     # Workers in one Cluster
-anycloud job list --worker <worker-id> -n 400       # more Jobs for one Worker
+anycloud deployment list --cluster training --json     # Deployments in one Cluster
+anycloud job list --deployment <deployment-id> -n 400       # more Jobs for one Deployment
 ```
 
 `job list`, `service list`, and `vm list` accept `ls` aliases and print directly.
 They retain the existing filters, limits, agent session scope, and JSON/CSV/ID
 output. Their workload type is fixed, so they do not accept `--type`.
 
-`worker list --cluster` accepts a Cluster ID or active name and reads stored
-inventory even when the Cluster is unhealthy. `job list --worker` requires an
-immutable Worker ID and can retrieve historical Jobs after that Worker is
-deleted. Put listing options after `list` or `ls`; `job --worker <id-or-name>`
+`deployment list --cluster` accepts a Cluster ID or active name and reads stored
+inventory even when the Cluster is unhealthy. `job list --deployment` requires an
+immutable Deployment ID and can retrieve historical Jobs after that Deployment is
+deleted. Put listing options after `list` or `ls`; `job --deployment <id-or-name>`
 submits a new Job instead.
 
 In an interactive terminal, `anycloud list` offers the combined overview and
-Cluster → Worker picker. `anycloud job list --watch` opens that picker and
-refreshes the selected Worker's Jobs; watch cannot be combined with filters or
+Cluster → Deployment picker. `anycloud job list --watch` opens that picker and
+refreshes the selected Deployment's Jobs; watch cannot be combined with filters or
 machine-readable output.
 
 ## Debugging
@@ -372,7 +372,7 @@ Only `SELECT` / `WITH` / `EXPLAIN` / `PRAGMA` run; results cap at 10,000 rows (`
 - **GPU count: `--gpus all` vs `--gpus 8` (CLI), `gpuType="h100:8"` (SDK).** On `anycloud job`, `--gpus all` uses every GPU on whatever VM is provisioned (varies by quota); use an explicit count when N matters. In the generated Python admission model, set `gpuType` to `<type>:<count>`.
 - **Multi-cloud picks cheapest at dispatch time** — the same Job may land on different providers across runs unless `--credentials` or `--region` constrains it.
 - **A Job's VM is released when it finishes.** Inspect a running job with `anycloud exec` / `anycloud ssh` before it exits; afterwards, read `anycloud status <id> --verbose` and `anycloud logs <id>`.
-- **Agent runs are session-scoped.** In non-interactive agent runs, `list` (including `job list`, `service list`, and `vm list`) and `status` default to the detected session. A Job list with `--worker` keeps that session filter. An empty list does not mean no Jobs exist. Pass `--session <id>` or `--agent <name>` to select another scope.
+- **Agent runs are session-scoped.** In non-interactive agent runs, `list` (including `job list`, `service list`, and `vm list`) and `status` default to the detected session. A Job list with `--deployment` keeps that session filter. An empty list does not mean no Jobs exist. Pass `--session <id>` or `--agent <name>` to select another scope.
 - **`list` and `ls` are subcommands.** Under `job`, `service`, `vm`, and their aliases, launch images with these names using a tag, such as `anycloud job list:latest`.
 
 ## Reference
