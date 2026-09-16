@@ -24,7 +24,7 @@ user's own account (BYOC); AnyCloud does not host compute.
 - Create a persistent VM for interactive Docker, Git, and shell work
 - Compare GPU prices across clouds and pick the cheapest
 - Use spot/preemptible instances with automatic checkpoint recovery
-- Monitor, debug, or inspect deployments already submitted — status, logs, spend, events, or ad-hoc read-only SQL queries on deployment state
+- Monitor, debug, or inspect workloads already submitted — status, logs, spend, events, or ad-hoc read-only SQL queries on workload state
 
 **Don't use AnyCloud for:**
 
@@ -54,23 +54,23 @@ anycloud job ghcr.io/acme/my-training:latest \
     -- python train.py --lr 0.001 --epochs 50
 ```
 
-`anycloud login` logs your local Docker CLI into GHCR, so private GHCR images pull automatically. On VM-backed providers, deployments start from the provider base image and pull the requested image reference; some retry paths can reuse an existing VM.
+`anycloud login` logs your local Docker CLI into GHCR, so private GHCR images pull automatically. On VM-backed providers, workloads start from the provider base image and pull the requested image reference; some retry paths can reuse an existing VM.
 
 The equivalent generated Python SDK request is:
 
 ```python
 from importlib.metadata import version
 
-from anycloud.api.deployment_admission_api import DeploymentAdmissionApi
+from anycloud.api.workload_admission_api import WorkloadAdmissionApi
 from anycloud.api_client import ApiClient
 from anycloud.configuration import Configuration
-from anycloud.models.deployment_admission_input import DeploymentAdmissionInput
+from anycloud.models.workload_admission_input import WorkloadAdmissionInput
 
 sdk_version = version("anycloud-sdk")
 client = ApiClient(Configuration(access_token="github-access-token"))
-job = DeploymentAdmissionApi(client).submit_deployment_sync(
+job = WorkloadAdmissionApi(client).submit_workload_sync(
     sdk_version,
-    DeploymentAdmissionInput.from_dict({
+    WorkloadAdmissionInput.from_dict({
         "id": "lr-sweep-1e-3",
         "image": "ghcr.io/acme/my-training:latest",
         "gpuType": "h100:8",
@@ -189,7 +189,7 @@ capacity. Listing existing resources does not require adding credentials.
 
 Bootstrap done. Skip to the user's task.
 
-GitHub auth via `anycloud login` is required for pulling private images from GHCR. There's no separate status check — if a deployment fails at image pull, prompt the user to run `anycloud login`.
+GitHub auth via `anycloud login` is required for pulling private images from GHCR. There's no separate status check — if a workload fails at image pull, prompt the user to run `anycloud login`.
 
 ## Credentials
 
@@ -232,20 +232,20 @@ anycloud job ghcr.io/acme/app:latest --secret hf -- python train.py
 
 When submitting a Job from an image (`anycloud job IMAGE`):
 
-| Flag                      | Effect                                                                                                                 |
-| ------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
-| `--spot`                  | Use spot/preemptible instances. Cheapest; restores `/mnt/checkpoint` on preemption (your code must write it).          |
-| `--gpu-type <type>`       | Constrain GPU type (`h100`, `a100`, `l40s`, `b200`). Repeatable for fallback pool.                                     |
-| `--gpus <all\|N>`         | Use every GPU on the VM (`all`) or a specific count.                                                                   |
-| `--shm-size <size>`       | Shared memory (e.g. `8g`). Bump for PyTorch DataLoader / NCCL, else multi-GPU can hang.                                |
-| `--credentials <name>`    | Cloud credentials to use. Repeatable for an ordered fallback list.                                                     |
-| `--region <region>`       | Pin to a cloud region.                                                                                                 |
-| `--input-bucket <name>`   | Read-only mount at `/mnt/input`. **Must exist + be populated before the Job starts** — see Moving data.                |
-| `--output-bucket <name>`  | Mount as `/mnt/output`. Auto-created if missing. On `--spot`, a per-deployment checkpoint bucket is also auto-created. |
-| `-e KEY=VALUE` / `-e KEY` | Env var. `-e KEY` reads from the current shell. Repeatable.                                                            |
-| `--env-file <file>`       | Load env vars from a `.env` file. Flags take precedence over file entries.                                             |
-| `--secret <name>`         | Inject a named secret as env vars (create with `anycloud secrets new`). Repeatable.                                    |
-| `-i, --id <id>`           | Custom deployment ID (otherwise auto-generated).                                                                       |
+| Flag                      | Effect                                                                                                               |
+| ------------------------- | -------------------------------------------------------------------------------------------------------------------- |
+| `--spot`                  | Use spot/preemptible instances. Cheapest; restores `/mnt/checkpoint` on preemption (your code must write it).        |
+| `--gpu-type <type>`       | Constrain GPU type (`h100`, `a100`, `l40s`, `b200`). Repeatable for fallback pool.                                   |
+| `--gpus <all\|N>`         | Use every GPU on the VM (`all`) or a specific count.                                                                 |
+| `--shm-size <size>`       | Shared memory (e.g. `8g`). Bump for PyTorch DataLoader / NCCL, else multi-GPU can hang.                              |
+| `--credentials <name>`    | Cloud credentials to use. Repeatable for an ordered fallback list.                                                   |
+| `--region <region>`       | Pin to a cloud region.                                                                                               |
+| `--input-bucket <name>`   | Read-only mount at `/mnt/input`. **Must exist + be populated before the Job starts** — see Moving data.              |
+| `--output-bucket <name>`  | Mount as `/mnt/output`. Auto-created if missing. On `--spot`, a per-workload checkpoint bucket is also auto-created. |
+| `-e KEY=VALUE` / `-e KEY` | Env var. `-e KEY` reads from the current shell. Repeatable.                                                          |
+| `--env-file <file>`       | Load env vars from a `.env` file. Flags take precedence over file entries.                                           |
+| `--secret <name>`         | Inject a named secret as env vars (create with `anycloud secrets new`). Repeatable.                                  |
+| `-i, --id <id>`           | Custom workload ID (otherwise auto-generated).                                                                       |
 
 Other Docker-runtime / targeting flags: `--memory`, `--cpus`, `--ipc`, `--runtime`, `--disk-size`, `--vm-type` (repeatable, explicit instance types), `--zone` — see the CLI reference.
 
@@ -258,7 +258,7 @@ Three mount points, synced automatically — request them with `--input-bucket` 
 
 - `/mnt/input` — **read-only, and the bucket must exist + be populated before the Job starts.** Create and fill it first: `anycloud bucket create <name> --credentials <cred>`, then `anycloud bucket upload <name> <local> <remote> --credentials <cred>`.
 - `/mnt/output` — read-write, **auto-created**; uploads to the cloud every ~60s. Fetch results after with `anycloud bucket download <name> <remote> <local> --credentials <cred>`.
-- `/mnt/checkpoint` — auto-created per deployment on `--spot`; downloaded on startup, uploaded ~60s. **Your code must read it on startup and write to it** to actually resume after preemption.
+- `/mnt/checkpoint` — auto-created per workload on `--spot`; downloaded on startup, uploaded ~60s. **Your code must read it on startup and write to it** to actually resume after preemption.
 
 ## Discovering GPUs and Comparing Prices
 
@@ -302,14 +302,14 @@ anycloud spend show                               # remaining headroom across al
 anycloud cost [<id>] [--period 1d..90d]           # Job + Service + VM spend
 ```
 
-**A hit cap doesn't fail `job`** — it returns an id, but the deployment stays `Queued` with a `blocked by throttle|budget …` reason in `anycloud status` / `ls`, then dispatches automatically once the cap clears (a VM ends, the window rolls over, or you raise the cap). Don't mistake a spend-blocked job for a stuck one — check `status`.
+**A hit cap doesn't fail `job`** — it returns an id, but the workload stays `Queued` with a `blocked by throttle|budget …` reason in `anycloud status` / `ls`, then dispatches automatically once the cap clears (a VM ends, the window rolls over, or you raise the cap). Don't mistake a spend-blocked job for a stuck one — check `status`.
 
 **Scopes:** account-wide (default — counts human submits too) or `--agent-session` (only the current agent run). For an agent submitting autonomously, set an `--agent-session` `budget` and/or `throttle` cap first as your guardrail.
 
-## Listing deployments and Workers
+## Listing workloads and Workers
 
 ```bash
-anycloud list                                      # recent deployments across all types
+anycloud list                                      # recent workloads across all types
 anycloud job list --status failed                  # Jobs only
 anycloud service list --json                       # Services as JSON
 anycloud vm list                                  # VMs only
@@ -319,7 +319,7 @@ anycloud job list --worker <worker-id> -n 400       # more Jobs for one Worker
 
 `job list`, `service list`, and `vm list` accept `ls` aliases and print directly.
 They retain the existing filters, limits, agent session scope, and JSON/CSV/ID
-output. Their deployment type is fixed, so they do not accept `--type`.
+output. Their workload type is fixed, so they do not accept `--type`.
 
 `worker list --cluster` accepts a Cluster ID or active name and reads stored
 inventory even when the Cluster is unhealthy. `job list --worker` requires an
@@ -348,8 +348,8 @@ anycloud exec <id> "tail -n 100 train.log"
 1. `anycloud status <id> --verbose` — read events, error details, and logs.
 2. If environment-related, `anycloud exec <id> "<command>"` while the job is still running to inspect the live environment.
 3. For spot preemption, AnyCloud re-provisions and restores `/mnt/checkpoint` automatically — but it only resumes work if your code reads/writes checkpoints there (see Moving data); otherwise it restarts from scratch.
-4. `anycloud resubmit <id>` — re-queue a terminated deployment with the same config.
-5. Need a detail `status` / `ls` don't surface (events, timing, cross-deployment aggregates)? Query it read-only with `anycloud db query` (see below).
+4. `anycloud resubmit <id>` — re-queue a terminated workload with the same config.
+5. Need a detail `status` / `ls` don't surface (events, timing, cross-workload aggregates)? Query it read-only with `anycloud db query` (see below).
 
 ## Inspecting state directly (read-only SQL)
 
@@ -357,9 +357,9 @@ When no dedicated command exposes the field or aggregate you need, query the loc
 
 ```bash
 anycloud db schema --json                    # tables, columns, foreign keys, indexes (use this first)
-anycloud db schema deployments               # narrow to one table
-anycloud db query "SELECT id, state FROM deployments ORDER BY started_at DESC LIMIT 10"
-anycloud db query "SELECT * FROM deployment_events WHERE deployment_id = '<id>'" --json
+anycloud db schema workloads               # narrow to one table
+anycloud db query "SELECT id, state FROM workloads ORDER BY started_at DESC LIMIT 10"
+anycloud db query "SELECT * FROM workload_events WHERE workload_id = '<id>'" --json
 ```
 
 Only `SELECT` / `WITH` / `EXPLAIN` / `PRAGMA` run; results cap at 10,000 rows (`--json` sets `truncated: true` when the cap fires — add `LIMIT`). Don't hardcode columns — run `anycloud db schema --json` to introspect, since the schema can change between releases. Mutate state with the regular commands (`job` / `terminate` / `resubmit`), never SQL.

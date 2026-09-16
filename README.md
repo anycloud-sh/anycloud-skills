@@ -31,7 +31,7 @@ Teaches the agent how to:
 - Preprocess large datasets that don't fit on a laptop
 - Submit containerized batch jobs to multi-cloud BYOC infrastructure
 - Deploy long-running HTTP Services and create persistent VMs
-- List deployments by type and filter Workers by Cluster or Jobs by Worker
+- List workloads by type and filter Workers by Cluster or Jobs by Worker
 - Use spot instances with automatic checkpoint recovery
 - Compare GPU prices across AWS, GCP, Azure, Lambda, CoreWeave, and others
 
