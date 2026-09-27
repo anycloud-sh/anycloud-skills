@@ -28,7 +28,7 @@ user's own account (BYOC); AnyCloud does not host compute.
 
 **Don't use AnyCloud for:**
 
-- Using a VM as a managed production endpoint — use `anycloud service` for a long-running HTTP Service, or `anycloud api serve` for a hosted Anycloud control plane.
+- Using a VM as a managed production endpoint — use `anycloud service` for a long-running HTTP Service, or `anycloud cluster create` for a hosted Anycloud API on your own cluster.
 - Local-only workloads (run locally with Docker / Python directly).
 - Workloads that need to stay on a specific cloud for compliance — AnyCloud will pick the cheapest, which may move providers between runs unless constrained.
 
