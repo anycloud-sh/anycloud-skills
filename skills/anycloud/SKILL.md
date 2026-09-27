@@ -279,13 +279,13 @@ To answer "what's the cheapest H100 across clouds," run `anycloud gpus` / `prici
 
 ### When a region is out of capacity
 
-If a Job fails because the cloud has no quota for the GPU, request an increase:
+If a Job fails because the cloud has no quota for the GPU, inspect current limits and provider request history:
 
 ```bash
-anycloud quota request --gpu H100 --credential my-aws          # fans out across regions
-anycloud quota request --gpu H100 --credential my-aws --spot   # spot quota
-anycloud quota status --credential my-aws                      # open quota requests
+anycloud quota status --credential my-aws
 ```
+
+Request an increase with the desired limit through the AWS or Azure CLI or provider portal.
 
 ## Cost & spend controls
 
