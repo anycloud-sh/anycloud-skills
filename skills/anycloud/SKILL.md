@@ -332,6 +332,13 @@ Cluster → Deployment picker. `anycloud job list --watch` opens that picker and
 refreshes the selected Deployment's Jobs; watch cannot be combined with filters or
 machine-readable output.
 
+## Output for scripts
+
+- **`--json` puts only JSON on stdout.** Progress, info and warnings go to stderr. Parse stdout by itself and read stderr separately. Never `2>&1` a `--json` command: the merged warnings break the JSON.
+- **0.1.66 and later: piped output is complete and plain.** Pipe straight into `jq` or a parser. There's no need to write to a file first, set `CI=true` or strip ANSI codes. **On 0.1.65 and earlier**, piped output over 64 KiB can be cut off silently with exit 0, so redirect to a file (`> out.json`) and parse that.
+- **0.1.66 and later: capped bucket listings say so.** `anycloud bucket list --json` returns `{"entries": [...], "truncated": bool, "nextCursor": string | null}`. It exits `3` when the listing stopped at the limit (default 1000), in table output too. Exit 3 means a partial result, not a failure, so don't retry it. Continue with `--cursor <nextCursor>`, repeating the same bucket, prefix and `--recursive`, or pass `--all`. Sort after joining pages. Earlier versions print a bare array and exit 0 even when capped.
+- **`anycloud list` (and `job`/`service`/`vm list`) has no truncation signal yet.** It shows the newest 200 by default (at most 1000), and `--json` doesn't say when more exist. Getting exactly `-n` rows back means there may be more. Raise `-n`, or narrow with filters.
+
 ## Debugging
 
 ```bash
