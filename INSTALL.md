@@ -28,7 +28,7 @@ The skill bootstraps the anycloud CLI on first use. The user will need:
 
 1. anycloud installed: `brew install anycloud-sh/tap/anycloud` (or follow the [manual install guide](https://anycloud.sh/getting-started/))
 2. Logged in: `anycloud login` (GitHub OAuth)
-3. Active API healthy and compatible: `anycloud api info`. Start a local target with `anycloud api start`; a hosted target does not require a local server.
+3. Active API healthy and compatible: `anycloud api status`. Start a local target with `anycloud api start`; a hosted target does not require a local server.
 4. A cloud credential when provisioning cloud capacity: `anycloud credentials new`
 
 The skill checks the setup needed for the task. Inspecting existing resources

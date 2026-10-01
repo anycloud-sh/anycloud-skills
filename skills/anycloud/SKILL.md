@@ -170,22 +170,21 @@ Then run it with the `anycloud job` flags shown above.
 ## Before You Start (Agent Bootstrap)
 
 Confirm AnyCloud is installed and the selected API is healthy and compatible.
-Use `anycloud api info` to inspect the active target; run the local API checks
-below only for a local target. Check cloud credentials when provisioning cloud
-capacity. Listing existing resources does not require adding credentials.
+Use `anycloud api status` to inspect the active target, local or hosted.
+Check cloud credentials when provisioning cloud capacity. Listing existing
+resources does not require adding credentials.
 
-| Check                       | Output                             | Next action                                                                                                           |
-| --------------------------- | ---------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `anycloud --version`        | Version printed                    | Continue                                                                                                              |
-|                             | `command not found: anycloud`      | Install with Homebrew: `brew install anycloud-sh/tap/anycloud`; otherwise follow https://anycloud.sh/getting-started/ |
-| `anycloud job --help`       | Help printed                       | Continue                                                                                                              |
-|                             | `unknown command`                  | `anycloud update` — this CLI predates the `job` / `service` names; older releases spell them `submit` / `serve`       |
-| `anycloud api info`         | Healthy and compatible active API  | Continue with that target                                                                                             |
-|                             | Unreachable or incompatible        | Resolve the reported connection or version issue for that target                                                      |
-| `anycloud api status`       | `running`                          | Continue                                                                                                              |
-|                             | `not running` / connection refused | `anycloud api start` (runs the local API as a Docker container)                                                       |
-| `anycloud credentials list` | Non-empty list                     | Continue                                                                                                              |
-|                             | Empty                              | Add a credential — see "Credentials" below                                                                            |
+| Check                       | Output                            | Next action                                                                                                           |
+| --------------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
+| `anycloud --version`        | Version printed                   | Continue                                                                                                              |
+|                             | `command not found: anycloud`     | Install with Homebrew: `brew install anycloud-sh/tap/anycloud`; otherwise follow https://anycloud.sh/getting-started/ |
+| `anycloud job --help`       | Help printed                      | Continue                                                                                                              |
+|                             | `unknown command`                 | `anycloud update` — this CLI predates the `job` / `service` names; older releases spell them `submit` / `serve`       |
+| `anycloud api status`       | `running`, compatible version     | Continue with that target                                                                                             |
+|                             | `Local API server is not running` | `anycloud api start` (runs the local API as a Docker container)                                                       |
+|                             | Not answering or incompatible     | Resolve the reported connection or version issue for that target                                                      |
+| `anycloud credentials list` | Non-empty list                    | Continue                                                                                                              |
+|                             | Empty                             | Add a credential — see "Credentials" below                                                                            |
 
 Bootstrap done. Skip to the user's task.
 

@@ -38,7 +38,7 @@ Teaches the agent how to:
 ## Requirements
 
 - [anycloud CLI](https://anycloud.sh/getting-started/) installed (`brew install anycloud-sh/tap/anycloud` on macOS/Linuxbrew)
-- A healthy active API (`anycloud api info`), either local or hosted
+- A healthy active API (`anycloud api status`), either local or hosted
 - A cloud credential when provisioning cloud capacity (`anycloud credentials new`). Inspecting existing resources uses the active API and does not require adding credentials. The user brings their own cloud account; anycloud doesn't host compute.
 
 ## Scope
