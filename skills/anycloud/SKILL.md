@@ -282,7 +282,7 @@ To answer "what's the cheapest H100 across clouds," run `anycloud gpus` / `prici
 If a Job fails because the cloud has no quota for the GPU, inspect current limits and provider request history:
 
 ```bash
-anycloud quota status --credential my-aws
+anycloud quota status --credentials my-aws
 ```
 
 Request an increase with the desired limit through the AWS or Azure CLI or provider portal.
