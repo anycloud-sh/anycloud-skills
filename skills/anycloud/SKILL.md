@@ -312,7 +312,7 @@ anycloud list                                      # recent workloads across all
 anycloud job list --status failed                  # Jobs only
 anycloud service list --json                       # Services as JSON
 anycloud vm list                                  # VMs only
-anycloud deployment list --cluster training --json     # Deployments in one Cluster
+anycloud deployment list --node-pool training --json   # Deployments on one node pool
 anycloud job list --deployment <deployment-id> -n 400       # more Jobs for one Deployment
 ```
 
@@ -320,14 +320,14 @@ anycloud job list --deployment <deployment-id> -n 400       # more Jobs for one 
 They retain the existing filters, limits, agent session scope, and JSON/CSV/ID
 output. Their workload type is fixed, so they do not accept `--type`.
 
-`deployment list --cluster` accepts a Cluster ID or active name and reads stored
-inventory even when the Cluster is unhealthy. `job list --deployment` requires an
-immutable Deployment ID and can retrieve historical Jobs after that Deployment is
-deleted. Put listing options after `list` or `ls`; `job --deployment <id-or-name>`
-submits a new Job instead.
+`deployment list --node-pool` accepts a node pool ID or name and reads stored
+inventory, even when the node pool is unhealthy. `job list --deployment`
+requires an immutable Deployment ID and can retrieve historical Jobs after that
+Deployment is deleted. Put listing options after `list` or `ls`;
+`job --deployment <id-or-name>` submits a new Job instead.
 
 In an interactive terminal, `anycloud list` offers the combined overview and
-Cluster → Deployment picker. `anycloud job list --watch` opens that picker and
+node pool → Deployment picker. `anycloud job list --watch` opens that picker and
 refreshes the selected Deployment's Jobs; watch cannot be combined with filters or
 machine-readable output.
 
