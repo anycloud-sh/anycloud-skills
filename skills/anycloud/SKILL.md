@@ -278,7 +278,7 @@ To answer "what's the cheapest H100 across clouds," run `anycloud gpus` / `prici
 
 ### When a region is out of capacity
 
-If a Job fails because the cloud has no quota for the GPU, inspect current limits and provider request history:
+A Job that can't get capacity or quota goes to `retrying` and is retried automatically. On 0.1.66 and later, `status` (and `wait`) show the attempt, the cause and when the next attempt is due (`.retry` in JSON); a quota cause also prints the exact `anycloud quota status` command to run. To inspect current limits and provider request history:
 
 ```bash
 anycloud quota status --credentials my-aws
@@ -331,6 +331,36 @@ node pool → Deployment picker. `anycloud job list --watch` opens that picker a
 refreshes the selected Deployment's Jobs; watch cannot be combined with filters or
 machine-readable output.
 
+## Waiting on workloads
+
+Never hand-write a polling loop around `status`, `list`, `logs` or `exec "echo READY"`, and never parse human output for state names. Use the CLI's own wait, which decides success and failure and exits by itself.
+
+**0.1.66 and later:**
+
+```bash
+anycloud wait <id>                         # Job: until completed. Service/VM: until running
+anycloud wait <id1> <id2> <id3> --json     # many IDs; one JSON record per line
+anycloud wait <id> --timeout 2h            # stop waiting after 2h; the workload keeps running
+anycloud job <image> ... --wait            # submit and wait (also service ... --wait, vm ... --wait)
+```
+
+- **Exit codes:** `0` every workload reached its target; `1` one ended any other way (`errored`, `failed`, `invalid`, `terminated`); `2` the wait could not observe one (not found, not signed in, no API, bad arguments); `4` `--timeout` elapsed; `130` Ctrl-C. With `--wait`, a submission that fails also exits `1`, before anything was created. Branch on the exit code, not on output text; in JSON, read `.retry.diagnosis`, not the human labels.
+- **Output:** one line per state change, plus a heartbeat after 30 minutes without one, so a Monitor or background task stays informed without your own sleep loop. A retrying line names the attempt, the cause (capacity or quota) and when the next attempt is due. With `--json`, records have `type` `state`, `heartbeat`, `observer` or `result`.
+- Wait on node pools, Deployments and clusters with typed references, mixed with Workload IDs: `anycloud wait node-pool/<id> deployment/<id> cluster/<id> train-a`. A Deployment succeeds when the Pod on its latest revision is ready. `deployment create`, `deployment upgrade` and `node-pool create` take `--wait` too; `upgrade --wait` waits for that upgrade's revision.
+- Lines and records say why something waits (`jobsAhead` for a queued Deployment Job, a node pool blocking a Service) and why a Workload ended early (`reason`, such as `claim-deadline-expired`).
+- Run long waits in the background (or under Monitor) instead of as a foreground command that hits a tool timeout. Waiting never terminates or resubmits anything.
+- **Earlier versions:** use `anycloud status <id> --watch --json` and read `.workload.state` from the last line. Its exit code is `0` even when the Job failed, and it never stops for a running Service or VM.
+
+**Wait for an application marker** (an epoch, `DONE`, a traceback) with a terminating filter on the log stream, always including failure markers, and pair it with `wait` for the workload's own outcome:
+
+```bash
+anycloud logs <id> --follow | grep -m1 -E 'EPOCH 10|DONE|Traceback|Killed|CUDA error'
+```
+
+On 0.1.66 and later, `logs --follow` started before the container exists waits for it (a `Workload is <state>; its container is not running yet. Waiting…` line on stderr), ends when a Job ends rather than when its container exits (following a recovered Job's new container), and stops at the next output line after `grep -m1` exits, or once the Job ends if its container had already exited. Never run bare `logs --follow` as a finite wait.
+
+Work you start inside a running VM with `nohup` is invisible to `wait`: the VM stays `running` after your process ends. Prefer a Job for finite work.
+
 ## Output for scripts
 
 - **`--json` puts only JSON on stdout.** Progress, info and warnings go to stderr. Parse stdout by itself and read stderr separately. Never `2>&1` a `--json` command: the merged warnings break the JSON.
@@ -344,6 +374,7 @@ machine-readable output.
 anycloud status [<id>]              # status, events, VM info, error details
 anycloud status <id> --verbose      # include detailed logs
 anycloud status <id> --json | jq    # raw JSON for scripts
+anycloud logs <id> --follow         # stream output, from submission onward
 
 anycloud exec <id> "nvidia-smi"     # run a command in the job execution environment
 anycloud exec <id> "tail -n 100 train.log"
@@ -353,7 +384,7 @@ anycloud exec <id> "tail -n 100 train.log"
 
 1. `anycloud status <id> --verbose` — read events, error details, and logs.
 2. If environment-related, `anycloud exec <id> "<command>"` while the job is still running to inspect the live environment.
-3. For spot preemption, AnyCloud re-provisions and restores `/mnt/checkpoint` automatically — but it only resumes work if your code reads/writes checkpoints there (see Moving data); otherwise it restarts from scratch.
+3. For spot preemption, AnyCloud re-provisions and restores `/mnt/checkpoint` automatically — but it only resumes work if your code reads/writes checkpoints there (see Moving data); otherwise it restarts from scratch. On 0.1.66 and later, `status` shows what has reached the checkpoint bucket (`Checkpoint: 52 objects, 101.0 MB in the bucket, newest 40s ago`; `.checkpoint.health` in JSON), so you don't need to list the bucket yourself.
 4. `anycloud resubmit <id>` — re-queue a terminated workload with the same config.
 5. Need a detail `status` / `ls` don't surface (events, timing, cross-workload aggregates)? Query it read-only with `anycloud db query` (see below).
 
