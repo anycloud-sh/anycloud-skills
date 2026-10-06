@@ -1,6 +1,6 @@
 ---
 name: anycloud
-description: 'Use when training, fine-tuning, evaluating, or running batch inference on cloud GPUs; running sweeps or large preprocessing jobs; creating a persistent cloud VM with container and host access; deploying a long-running Anycloud Service; comparing GPU prices across AWS, GCP, Azure, Lambda, and other providers; using spot instances with checkpoint recovery; or monitoring, debugging, operating, and tracking spend for Anycloud Jobs, Services, and VMs.'
+description: 'Use when setting up Anycloud, or when training, fine-tuning, evaluating, or running batch inference on cloud GPUs; running sweeps or large preprocessing jobs; creating a persistent cloud VM with container and host access; deploying a long-running Anycloud Service; comparing GPU prices across AWS, GCP, Azure, Lambda, and other providers; using spot instances with checkpoint recovery; or monitoring, debugging, operating, and tracking spend for Anycloud Jobs, Services, and VMs.'
 allowed-tools:
   - Bash
   - Read
@@ -12,6 +12,62 @@ AnyCloud is a multi-cloud orchestrator for containerized Jobs, Services, and
 persistent VMs. It finds suitable compute across the user's
 connected clouds (AWS, GCP, Azure, Lambda, and others) and provisions it in the
 user's own account (BYOC); AnyCloud does not host compute.
+
+## Setup
+
+Follow this when the user asks to set up Anycloud, and before the first command
+in a session. Check what is already true and fix only what is missing.
+
+1. **Install.** If `anycloud --version` fails, install without sudo:
+
+   ```bash
+   curl -fsSL https://get.anycloud.sh | sh
+   ```
+
+   The installer adds `~/.local/bin` to `PATH` for new terminals only. If your
+   tool starts a fresh shell per command, run each later command as
+   `PATH="$HOME/.local/bin:$PATH" anycloud ...` for the rest of the session.
+
+   Homebrew also works: `brew install anycloud-sh/tap/anycloud`.
+
+2. **Sign in.** Most commands need a GitHub token; without one they fail with
+   `No GitHub token found`. `anycloud login` prints a code and a URL, then
+   waits until the user approves. Start it in the background if you can and
+   give the user both, or ask them to run it in their own terminal.
+
+3. **Pick the API.** `anycloud api status` shows the active target. If it says
+   `Local API server is not running`, run `anycloud api start`, which needs
+   Docker. A hosted API needs no local server.
+
+4. **Connect a cloud.** If `anycloud credentials list` is empty, ask the user to
+   run `anycloud credentials new` in their own terminal. Never ask for
+   credential values in chat. See "Credentials" below.
+
+5. **Set a guardrail.** Before launching anything, cap this session's spend:
+
+   ```bash
+   anycloud budget set 5 --per day --agent-session
+   ```
+
+6. **First run.** If the user has no task yet, offer to explain how Anycloud
+   works before launching anything: it starts machines in their own cloud
+   account, which bills them. When they are ready, run a small CPU Job from a
+   public image:
+
+   ```bash
+   anycloud job python:3.12-slim --credentials <name> -- python -c "print('hello from anycloud')"
+   anycloud status <id>
+   anycloud logs <id>
+   anycloud cost <id>
+   ```
+
+| Error                             | Fix                                                                       |
+| --------------------------------- | ------------------------------------------------------------------------- |
+| `command not found: anycloud`     | Prefix `PATH="$HOME/.local/bin:$PATH"`, or install as in step 1           |
+| `No GitHub token found`           | `anycloud login`, as in step 2                                            |
+| `Local API server is not running` | `anycloud api start`                                                      |
+| Image pull `denied` / `401`       | `anycloud login`                                                          |
+| `blocked by throttle\|budget`     | Not stuck: it dispatches when the cap clears; see "Cost & spend controls" |
 
 ## When to Use AnyCloud
 
@@ -166,29 +222,6 @@ Then run it with the `anycloud job` flags shown above.
 - **Push rejected (`denied` / `401`)?** Re-run `anycloud login` — the stored Docker credential is only as fresh as your GitHub token, which Docker never refreshes on its own.
 - **GHCR image names must be lowercase.**
 - **For repeatable, commit-pinned builds, use CI.** GitHub Actions gives a `packages: write` `GITHUB_TOKEN` (no `anycloud login` needed). Full workflow: https://anycloud.sh/platform/container-images#build-and-publish
-
-## Before You Start (Agent Bootstrap)
-
-Confirm AnyCloud is installed and the selected API is healthy and compatible.
-Use `anycloud api status` to inspect the active target, local or hosted.
-Check cloud credentials when provisioning cloud capacity. Listing existing
-resources does not require adding credentials.
-
-| Check                       | Output                            | Next action                                                                                                           |
-| --------------------------- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------- |
-| `anycloud --version`        | Version printed                   | Continue                                                                                                              |
-|                             | `command not found: anycloud`     | Install with Homebrew: `brew install anycloud-sh/tap/anycloud`; otherwise follow https://anycloud.sh/getting-started/ |
-| `anycloud job --help`       | Help printed                      | Continue                                                                                                              |
-|                             | `unknown command`                 | `anycloud update` — this CLI predates the `job` / `service` names; older releases spell them `submit` / `serve`       |
-| `anycloud api status`       | `running`, compatible version     | Continue with that target                                                                                             |
-|                             | `Local API server is not running` | `anycloud api start` (runs the local API as a Docker container)                                                       |
-|                             | Not answering or incompatible     | Resolve the reported connection or version issue for that target                                                      |
-| `anycloud credentials list` | Non-empty list                    | Continue                                                                                                              |
-|                             | Empty                             | Add a credential — see "Credentials" below                                                                            |
-
-Bootstrap done. Skip to the user's task.
-
-GitHub auth via `anycloud login` is required for pulling private images from GHCR. There's no separate status check — if a workload fails at image pull, prompt the user to run `anycloud login`.
 
 ## Credentials
 

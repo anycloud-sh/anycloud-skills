@@ -20,7 +20,7 @@ Or, once listed in the community marketplace:
 
 ### Codex CLI / Cursor / Other agents
 
-The skill follows the open [Agent Skills](https://github.com/anthropics/skills) spec — point your agent at `skills/anycloud/SKILL.md`.
+The skill follows the open [Agent Skills](https://github.com/anthropics/skills) spec. Tell your agent `set up https://anycloud.sh/SKILL.md`.
 
 ## What it does
 
@@ -37,7 +37,7 @@ Teaches the agent how to:
 
 ## Requirements
 
-- [anycloud CLI](https://anycloud.sh/getting-started/) installed (`brew install anycloud-sh/tap/anycloud` on macOS/Linuxbrew)
+- [anycloud CLI](https://anycloud.sh/getting-started/) installed (`curl -fsSL https://get.anycloud.sh | sh`, no sudo)
 - A healthy active API (`anycloud api status`), either local or hosted
 - A cloud credential when provisioning cloud capacity (`anycloud credentials new`). Inspecting existing resources uses the active API and does not require adding credentials. The user brings their own cloud account; anycloud doesn't host compute.
 
