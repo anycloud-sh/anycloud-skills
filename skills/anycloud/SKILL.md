@@ -261,6 +261,12 @@ anycloud secrets list                       # names only, no values
 anycloud job ghcr.io/acme/app:latest --secret hf -- python train.py
 ```
 
+Workloads never receive the user's Anycloud login token. If a workload clones,
+fetches, or pulls a private GitHub repository, ask the user to store a
+fine-grained token (Contents read on those repositories) privately with
+`anycloud secrets new github GITHUB_TOKEN=…`, then add `--secret github`. Guide:
+https://anycloud.sh/platform/secrets-environment#git-access-from-workloads
+
 ## Common Flags
 
 When submitting a Job from an image (`anycloud job IMAGE`):
