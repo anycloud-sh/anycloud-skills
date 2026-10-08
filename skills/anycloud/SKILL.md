@@ -110,7 +110,7 @@ anycloud job ghcr.io/acme/my-training:latest \
     -- python train.py --lr 0.001 --epochs 50
 ```
 
-`anycloud login` logs your local Docker CLI into GHCR, so private GHCR images pull automatically. On VM-backed providers, workloads start from the provider base image and pull the requested image reference; some retry paths can reuse an existing VM.
+After `anycloud login`, private GHCR images you or your organizations own pull automatically. On VM-backed providers, workloads start from the provider base image and pull the requested image reference; some retry paths can reuse an existing VM.
 
 The equivalent generated Python SDK request is:
 
@@ -188,7 +188,7 @@ replacement.
 
 ## Building and pushing your image
 
-Building and pushing is plain Docker — the only AnyCloud command in this step is `anycloud login`, which logs your local Docker CLI into GHCR so pushes (and later private pulls) just work. AnyCloud runs a prebuilt image; it does not build one for you.
+Building and pushing is plain Docker plus the GitHub CLI; AnyCloud isn't involved. `anycloud login` only reads packages, so it can't push. AnyCloud runs a prebuilt image; it does not build one for you.
 
 Use a public image directly only when its existing contents plus the submitted
 command are the complete workload. Otherwise build application code and
@@ -205,10 +205,11 @@ COPY . .
 CMD ["python", "train.py"]
 ```
 
-Log in once, then build and push to GHCR:
+Log Docker in to GHCR with the GitHub CLI once, then build and push. `gh auth login`'s default token lacks `write:packages`, so add it first. `gh auth refresh` fails while `GH_TOKEN` or `GITHUB_TOKEN` is set, so unset them:
 
 ```bash
-anycloud login                        # logs the local Docker CLI into GHCR (skips if Docker absent)
+gh auth refresh -s write:packages
+gh auth token | docker login ghcr.io -u "$(gh api user -q .login)" --password-stdin
 docker buildx build \
     --platform linux/amd64 \
     -t ghcr.io/<your-gh-username>/my-training:latest \
@@ -219,9 +220,9 @@ Then run it with the `anycloud job` flags shown above.
 
 - **`--platform linux/amd64` is mandatory.** A plain `docker build` on an Apple Silicon Mac may publish an `arm64` image that pulls fine but can't run on the VM.
 - **GPU images must be Linux-tested.** Start `FROM nvidia/cuda:*`, `pytorch/pytorch:*cuda*`, or an NVIDIA image you've run on Linux — a Mac build won't validate GPU access.
-- **Push rejected (`denied` / `401`)?** Re-run `anycloud login` — the stored Docker credential is only as fresh as your GitHub token, which Docker never refreshes on its own.
+- **Push rejected (`denied` / `401`)?** Run `gh auth refresh -s write:packages` and repeat the `docker login` above.
 - **GHCR image names must be lowercase.**
-- **For repeatable, commit-pinned builds, use CI.** GitHub Actions gives a `packages: write` `GITHUB_TOKEN` (no `anycloud login` needed). Full workflow: https://anycloud.sh/platform/container-images#build-and-publish
+- **For repeatable, commit-pinned builds, use CI.** In GitHub Actions, use the built-in `GITHUB_TOKEN` with `packages: write`. Full workflow: https://anycloud.sh/platform/container-images#build-and-publish
 
 ## Credentials
 
