@@ -30,14 +30,17 @@ in a session. Check what is already true and fix only what is missing.
 
    Homebrew also works: `brew install anycloud-sh/tap/anycloud`.
 
-2. **Sign in.** Most commands need a GitHub token; without one they fail with
-   `No GitHub token found`. `anycloud login` prints a code and a URL, then
-   waits until the user approves. Start it in the background if you can and
-   give the user both, or ask them to run it in their own terminal.
-
-3. **Pick the API.** `anycloud api status` shows the active target. If it says
+2. **Pick the API.** `anycloud api status` shows the active target. If it says
    `Local API server is not running`, run `anycloud api start`, which needs
    Docker. A hosted API needs no local server.
+
+3. **Sign in only when needed.** A local API runs public images without
+   GitHub. Private GHCR images, Services, clusters and hosted APIs need it:
+   they stop with the error code `GITHUB_SIGN_IN_REQUIRED` (or, for an image,
+   a message naming `anycloud login`). Branch on that code and hand
+   `anycloud login` to the user: it prints a code and a URL, then waits until
+   they approve. Start it in the background if you can and give the user both,
+   or ask them to run it in their own terminal.
 
 4. **Connect a cloud.** If `anycloud credentials list` is empty, ask the user to
    run `anycloud credentials new` in their own terminal. Never ask for
@@ -64,7 +67,9 @@ in a session. Check what is already true and fix only what is missing.
 | Error                             | Fix                                                                       |
 | --------------------------------- | ------------------------------------------------------------------------- |
 | `command not found: anycloud`     | Prefix `PATH="$HOME/.local/bin:$PATH"`, or install as in step 1           |
-| `No GitHub token found`           | `anycloud login`, as in step 2                                            |
+| `GITHUB_SIGN_IN_REQUIRED`         | Hand `anycloud login` to the user, as in step 3                           |
+| `No GitHub token found`           | `anycloud login`, as in step 3                                            |
+| `No local API token at …`         | `anycloud api start`, as the same user and `ANYCLOUD_DIR`                 |
 | `Local API server is not running` | `anycloud api start`                                                      |
 | Image pull `denied` / `401`       | `anycloud login`                                                          |
 | `blocked by throttle\|budget`     | Not stuck: it dispatches when the cap clears; see "Cost & spend controls" |
