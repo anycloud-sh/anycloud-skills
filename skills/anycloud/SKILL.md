@@ -55,7 +55,7 @@ in a session. Check what is already true and fix only what is missing.
    public image:
 
    ```bash
-   anycloud job python:3.12-slim --credentials <name> -- python -c "print('hello from anycloud')"
+   anycloud job python:3.12-slim --credentials <name> --vm-type <provider-vm-type> -- python -c "print('hello from anycloud')"
    anycloud status <id>
    anycloud logs <id>
    anycloud cost <id>
@@ -86,12 +86,18 @@ in a session. Check what is already true and fix only what is missing.
 
 - Using a VM as a managed production endpoint — use `anycloud service` for a long-running HTTP Service, or `anycloud cluster create` for a hosted Anycloud API on your own cluster.
 - Local-only workloads (run locally with Docker / Python directly).
-- Workloads that need to stay on a specific cloud for compliance — AnyCloud will pick the cheapest, which may move providers between runs unless constrained.
+- Workloads whose compliance requirements cannot be met by the selected cloud identity and region. Select a compliant compute credential and pin the region when required.
 
 ## Capabilities: When to Use What
 
 Choose the workload shape first. Jobs and Services run published container
 images containing the application code and dependencies.
+
+For unattended VM-backed launches with a named compute credential, include either
+`--vm-type <provider-vm-type>` or `--gpu-type <type>` in Job, Service, and VM
+commands. Omitting both requires an interactive compute picker. Choose a target
+from that credential's provider catalog; use a placeholder when preparing a
+command for review. `--credentials` accepts exactly one compute identity.
 
 ### 1. Job — finite container workload
 
@@ -277,7 +283,7 @@ When submitting a Job from an image (`anycloud job IMAGE`):
 | `--gpu-type <type>`       | Constrain GPU type (`h100`, `a100`, `l40s`, `b200`). Repeatable for fallback pool.                                   |
 | `--gpus <all\|N>`         | Use every GPU on the VM (`all`) or a specific count.                                                                 |
 | `--shm-size <size>`       | Shared memory (e.g. `8g`). Bump for PyTorch DataLoader / NCCL, else multi-GPU can hang.                              |
-| `--credentials <name>`    | Cloud credentials to use. Repeatable for an ordered fallback list.                                                   |
+| `--credentials <name>`    | One named compute credential. Specify once; do not repeat for multi-cloud fallback.                                  |
 | `--region <region>`       | Pin to a cloud region.                                                                                               |
 | `--input-bucket <name>`   | Read-only mount at `/mnt/input`. **Must exist + be populated before the Job starts** — see Moving data.              |
 | `--output-bucket <name>`  | Mount as `/mnt/output`. Auto-created if missing. On `--spot`, a per-workload checkpoint bucket is also auto-created. |
@@ -314,7 +320,7 @@ anycloud pricing aws p5.48xlarge --region us-east-1  # one region
 
 Add `--json` to any of these for machine-readable output.
 
-To answer "what's the cheapest H100 across clouds," run `anycloud gpus` / `pricing` per provider and compare. Or just run a Job with `--gpu-type h100 --spot` and let AnyCloud's optimizer place it on the cheapest available GPU at dispatch time — don't hardcode a cloud/region unless the workload requires it. `--gpu-type` is repeatable for a fallback pool (`--gpu-type h100 --gpu-type a100`); `--gpus all` uses every GPU on the VM, `--gpus 8` an exact count.
+To answer "what's the cheapest H100 across clouds," run `anycloud gpus` / `pricing` per provider and compare. Or just run a Job with `--gpu-type h100 --spot` and let AnyCloud's optimizer place it on available capacity within the selected compute credential and any region constraints. A named `--credentials` value selects one cloud identity; compare providers separately before choosing it. `--gpu-type` is repeatable for a fallback pool (`--gpu-type h100 --gpu-type a100`); `--gpus all` uses every GPU on the VM, `--gpus 8` an exact count.
 
 ### When a region is out of capacity
 
@@ -447,7 +453,7 @@ Only `SELECT` / `WITH` / `EXPLAIN` / `PRAGMA` run; results cap at 10,000 rows (`
 - **Docker daemon required locally** for `anycloud api start` and for building/pushing your own image. Image validation runs server-side, so submitting a prebuilt image doesn't need local Docker.
 - **Bucket names are globally unique per cloud.** Pick something distinctive or let AnyCloud auto-generate.
 - **GPU count: `--gpus all` vs `--gpus 8` (CLI), `gpuType="h100:8"` (SDK).** On `anycloud job`, `--gpus all` uses every GPU on whatever VM is provisioned (varies by quota); use an explicit count when N matters. In the generated Python admission model, set `gpuType` to `<type>:<count>`.
-- **Multi-cloud picks cheapest at dispatch time** — the same Job may land on different providers across runs unless `--credentials` or `--region` constrains it.
+- **Placement stays within one compute identity.** Each submission resolves one credential and provider. Compare providers before choosing that identity; use `--region` to constrain placement within it.
 - **A Job's VM is released when it finishes.** Inspect a running job with `anycloud exec` / `anycloud ssh` before it exits; afterwards, read `anycloud status <id> --verbose` and `anycloud logs <id>`.
 - **Agent runs are session-scoped.** In non-interactive agent runs, `list` (including `job list`, `service list`, and `vm list`) and `status` default to the detected session. A Job list with `--deployment` keeps that session filter. An empty list does not mean no Jobs exist. Pass `--session <id>` or `--agent <name>` to select another scope.
 - **`list` and `ls` are subcommands.** Under `job`, `service`, `vm`, and their aliases, launch images with these names using a tag, such as `anycloud job list:latest`.

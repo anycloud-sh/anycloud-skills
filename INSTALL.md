@@ -9,14 +9,28 @@
 
 Once installed, run `/reload-plugins` to activate.
 
-## Community marketplace (once listed)
+## Community marketplace
 
-```
-/plugin marketplace add anthropics/claude-plugins-community
-/plugin install anycloud@claude-community
+Anycloud is not listed in the community catalog as of October 8, 2026. Use the
+direct installation above. Directory review and publication are separate from
+installing this plugin; check the [community catalog](https://github.com/anthropics/claude-plugins-community/blob/main/.claude-plugin/marketplace.json)
+before relying on that distribution path.
+
+## Codex CLI
+
+Install the skill in Codex's native user skill directory:
+
+```bash
+mkdir -p ~/.agents/skills/anycloud
+curl -fsSL https://anycloud.sh/SKILL.md -o ~/.agents/skills/anycloud/SKILL.md
 ```
 
-## Codex CLI / Cursor / Other agents
+Start a new Codex session after installation. Codex can select the skill from
+its description when a task matches; installing it does not itself provision
+compute. See [Codex skills](https://developers.openai.com/codex/skills) for
+project-scoped installation and skill discovery.
+
+## Cursor / Other agents
 
 The skill follows the open Agent Skills spec. Tell your agent:
 

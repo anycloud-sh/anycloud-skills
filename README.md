@@ -11,16 +11,12 @@ Claude Code / Codex CLI / ChatGPT [Agent Skills](https://code.claude.com/docs/en
 /plugin install anycloud@anycloud-skills
 ```
 
-Or, once listed in the community marketplace:
-
-```
-/plugin marketplace add anthropics/claude-plugins-community
-/plugin install anycloud@claude-community
-```
+This direct marketplace is available now. See [installation](INSTALL.md) for
+community directory availability and setup requirements.
 
 ### Codex CLI / Cursor / Other agents
 
-The skill follows the open [Agent Skills](https://github.com/anthropics/skills) spec. Tell your agent `set up https://anycloud.sh/SKILL.md`.
+The skill follows the open [Agent Skills](https://github.com/anthropics/skills) spec. For Codex, install it at `~/.agents/skills/anycloud/SKILL.md` using the [native installation steps](INSTALL.md#codex-cli). For other agents, tell your agent `set up https://anycloud.sh/SKILL.md`.
 
 ## What it does
 

@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "anycloud",
   "displayName": "AnyCloud",
-  "description": "Run AI workloads — training, fine-tuning, evals, batch inference — on the cheapest available cloud GPU across AWS, GCP, Azure, Lambda, CoreWeave, and other clouds. Multi-cloud BYOC; spot-aware with automatic preemption recovery.",
+  "description": "Run containerized Jobs, long-running HTTP Services, and persistent VMs across your own AWS, Azure, GCP, and Lambda accounts. Operate workloads, compare GPU prices, recover checkpointed Jobs on spot, and track agent-session spend.",
   "version": "0.1.67",
   "author": {
     "name": "anycloud",
@@ -20,6 +20,10 @@
     "Spot",
     "Cost Optimization",
     "AI Infrastructure",
-    "BYOC"
+    "BYOC",
+    "Batch Jobs",
+    "HTTP Services",
+    "Persistent VMs",
+    "Agent Spend Controls"
   ]
 }
