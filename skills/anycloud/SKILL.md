@@ -37,10 +37,12 @@ in a session. Check what is already true and fix only what is missing.
 3. **Sign in only when needed.** A local API runs public images without
    GitHub. Private GHCR images, Services, clusters and hosted APIs need it:
    they stop with the error code `GITHUB_SIGN_IN_REQUIRED` (or, for an image,
-   a message naming `anycloud login`). Branch on that code and hand
-   `anycloud login` to the user: it prints a code and a URL, then waits until
-   they approve. Start it in the background if you can and give the user both,
-   or ask them to run it in their own terminal.
+   a message naming `anycloud login`). Run `anycloud login`: from your shell it
+   prints `{"actionRequired": {...}}` with a `url` and `userCode`, and exits.
+   Give the user both and ask them to approve in their browser, then rerun your
+   command; it completes the sign-in. Any command that prints `actionRequired`
+   needs the same: relay its `message` to the user and wait for them. Never
+   ask for, paste or handle a token or other secret yourself.
 
 4. **Connect a cloud.** If `anycloud credentials list` is empty, ask the user to
    run `anycloud credentials new` in their own terminal. Never ask for
@@ -67,8 +69,8 @@ in a session. Check what is already true and fix only what is missing.
 | Error                             | Fix                                                                       |
 | --------------------------------- | ------------------------------------------------------------------------- |
 | `command not found: anycloud`     | Prefix `PATH="$HOME/.local/bin:$PATH"`, or install as in step 1           |
-| `GITHUB_SIGN_IN_REQUIRED`         | Hand `anycloud login` to the user, as in step 3                           |
-| `No GitHub token found`           | `anycloud login`, as in step 3                                            |
+| `GITHUB_SIGN_IN_REQUIRED`         | `anycloud login`, then relay its URL and code, as in step 3               |
+| `actionRequired` JSON             | Relay its `message` (and any `url`, `userCode`) to the user, as in step 3 |
 | `No local API token at …`         | `anycloud api start`, as the same user and `ANYCLOUD_DIR`                 |
 | `Local API server is not running` | `anycloud api start`                                                      |
 | Image pull `denied` / `401`       | `anycloud login`                                                          |
