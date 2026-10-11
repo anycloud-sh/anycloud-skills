@@ -43,6 +43,9 @@ in a session. Check what is already true and fix only what is missing.
    command; it completes the sign-in. Any command that prints `actionRequired`
    needs the same: relay its `message` to the user and wait for them. Never
    ask for, paste or handle a token or other secret yourself.
+   For a hosted API, run `anycloud login <api-url>`; in CI, set
+   `ANYCLOUD_API_TOKEN` (from `anycloud api token`) together with `API_URL`. A
+   hosted API refuses `GITHUB_TOKEN` and personal access tokens as its bearer.
 
 4. **Connect a cloud.** If `anycloud credentials list` is empty, ask the user to
    run `anycloud credentials new` in their own terminal. Never ask for
@@ -71,6 +74,7 @@ in a session. Check what is already true and fix only what is missing.
 | `command not found: anycloud`     | Prefix `PATH="$HOME/.local/bin:$PATH"`, or install as in step 1           |
 | `GITHUB_SIGN_IN_REQUIRED`         | `anycloud login`, then relay its URL and code, as in step 3               |
 | `actionRequired` JSON             | Relay its `message` (and any `url`, `userCode`) to the user, as in step 3 |
+| `rotated or removed`              | `anycloud login <api-url>`, as in step 3                                  |
 | `No local API token at …`         | `anycloud api start`, as the same user and `ANYCLOUD_DIR`                 |
 | `Local API server is not running` | `anycloud api start`                                                      |
 | Image pull `denied` / `401`       | `anycloud login`                                                          |
