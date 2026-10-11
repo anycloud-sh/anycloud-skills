@@ -7,14 +7,14 @@
   },
   "metadata": {
     "description": "Run containerized Jobs, long-running HTTP Services, and persistent VMs across your own AWS, Azure, GCP, and Lambda accounts. Operate workloads, compare GPU prices, recover checkpointed Jobs on spot, and track agent-session spend.",
-    "version": "0.1.68"
+    "version": "0.1.69"
   },
   "plugins": [
     {
       "name": "anycloud",
       "source": "./",
       "description": "Run containerized Jobs, long-running HTTP Services, and persistent VMs across your own AWS, Azure, GCP, and Lambda accounts. Operate workloads, compare GPU prices, recover checkpointed Jobs on spot, and track agent-session spend.",
-      "version": "0.1.68",
+      "version": "0.1.69",
       "author": {
         "name": "anycloud",
         "email": "luis@anycloud.sh"
