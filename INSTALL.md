@@ -41,9 +41,9 @@ The skill follows the open Agent Skills spec. Tell your agent:
 The skill bootstraps the anycloud CLI on first use. The user will need:
 
 1. anycloud installed: `curl -fsSL https://get.anycloud.sh | sh` (no sudo) or `brew install anycloud-sh/tap/anycloud`
-2. Logged in: `anycloud login` (GitHub OAuth)
-3. Active API healthy and compatible: `anycloud api status`. Start a local target with `anycloud api start`; a hosted target does not require a local server.
-4. A cloud credential when provisioning cloud capacity: `anycloud credentials new`
+2. Active API healthy and compatible: `anycloud api status`. Start a local target with `anycloud api start`, or select a team's hosted API with `anycloud api use <url>`.
+3. A cloud credential when provisioning cloud capacity: `anycloud credentials new`
+4. GitHub sign-in only for private GHCR images, Services, clusters and hosted APIs: `anycloud login`. A local API runs public images without it.
 
 The skill checks the setup needed for the task. Inspecting existing resources
 does not require adding cloud credentials.

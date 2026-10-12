@@ -32,12 +32,15 @@ in a session. Check what is already true and fix only what is missing.
 
 2. **Pick the API.** `anycloud api status` shows the active target. If it says
    `Local API server is not running`, run `anycloud api start`, which needs
-   Docker. A hosted API needs no local server.
+   Docker. A hosted API needs no local server. If the user's team already
+   runs one, ask for its URL and select it instead:
+   `anycloud api use https://<cluster-id>.anycloud.sh`.
 
 3. **Sign in only when needed.** A local API runs public images without
    GitHub. Private GHCR images, Services, clusters and hosted APIs need it:
    they stop with the error code `GITHUB_SIGN_IN_REQUIRED` (or, for an image,
-   a message naming `anycloud login`). Run `anycloud login`: from your shell it
+   a message naming `anycloud login`). Login asks GitHub only for
+   `read:org read:packages`. Run `anycloud login`: from your shell it
    prints `{"actionRequired": {...}}` with a `url` and `userCode`, and exits.
    Give the user both and ask them to approve in their browser, then rerun your
    command; it completes the sign-in. Any command that prints `actionRequired`
@@ -49,7 +52,19 @@ in a session. Check what is already true and fix only what is missing.
 
 4. **Connect a cloud.** If `anycloud credentials list` is empty, ask the user to
    run `anycloud credentials new` in their own terminal. Never ask for
-   credential values in chat. See "Credentials" below.
+   credential values in chat. Don't install cloud CLIs for the user; relay
+   what the wizard prints. When `aws`, `gcloud` or `az` is missing, it prints
+   how to install it; AWS still offers its other choices. Azure and GCP
+   generation stop; rerun and pick another option. If the user has
+   no cloud access, have them pick "I don't have AWS access keys" (or the
+   Azure or GCP equivalent) and forward the request it prints to their cloud
+   administrator. The identity needs its published role: AWS
+   [`AnycloudAccess`](https://anycloud.sh/reference/cli/credentials#aws-permissions),
+   Azure [`Anycloud`](https://anycloud.sh/reference/cli/credentials#azure-permissions)
+   (or Contributor), or GCP
+   [`Anycloud`](https://anycloud.sh/reference/cli/credentials#gcp-permissions)
+   with the Security Token Service API enabled for Buckets.
+   See "Credentials" below.
 
 5. **Set a guardrail.** Before launching anything, cap this session's spend:
 
@@ -253,7 +268,7 @@ credentials; see https://anycloud.sh/platform/hosted-apis#what-is-shared.
 anycloud credentials new            # picks provider + walks through setup
 ```
 
-The wizard can import durable static AWS access-key profiles and GCP service-account key JSON, accept existing provider values, or explicitly create an Azure service principal with the logged-in Azure CLI. AWS SSO, role, session-token, and other indirect profiles cannot be imported, GCP user ADC is not durable service-account material, and AWS/GCP `--generate` is unsupported.
+The wizard can import durable static AWS access-key profiles and GCP service-account key JSON, accept existing provider values, or create a dedicated AWS IAM user, GCP service account or Azure service principal through the user's logged-in cloud CLI (`--generate`). AWS SSO, role, session-token, and other indirect profiles cannot be imported, and GCP user ADC is not durable service-account material.
 
 **Non-interactive (CI or scripted):**
 
