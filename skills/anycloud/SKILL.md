@@ -47,8 +47,10 @@ in a session. Check what is already true and fix only what is missing.
    needs the same: relay its `message` to the user and wait for them. Never
    ask for, paste or handle a token or other secret yourself.
    For a hosted API, run `anycloud login <api-url>`; in CI, set
-   `ANYCLOUD_API_TOKEN` (from `anycloud api token`) together with `API_URL`. A
-   hosted API refuses `GITHUB_TOKEN` and personal access tokens as its bearer.
+   `ANYCLOUD_API_TOKEN` (from `anycloud api token`, run as a dedicated CI
+   account) together with `API_URL`. A hosted API refuses personal access
+   tokens and the GitHub Actions token. Full workflow:
+   https://anycloud.sh/examples/github-actions
 
 4. **Connect a cloud.** If `anycloud credentials list` is empty, ask the user to
    run `anycloud credentials new` in their own terminal. Never ask for
