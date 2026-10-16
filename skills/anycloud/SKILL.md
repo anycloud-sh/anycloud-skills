@@ -1,6 +1,6 @@
 ---
 name: anycloud
-description: 'Use when setting up Anycloud, or when training, fine-tuning, evaluating, or running batch inference on cloud GPUs; running sweeps or large preprocessing jobs; creating a persistent cloud VM with container and host access; deploying a long-running Anycloud Service; comparing GPU prices across AWS, GCP, Azure, Lambda, and other providers; using spot instances with checkpoint recovery; or monitoring, debugging, operating, and tracking spend for Anycloud Jobs, Services, and VMs.'
+description: 'Use when setting up Anycloud, or when training, fine-tuning, evaluating, or running batch inference on cloud GPUs; running sweeps or large preprocessing jobs; creating a persistent cloud VM with container and host access; deploying a long-running Anycloud Service; sizing CPU hosts, inspecting VM capabilities, planning account quotas, or comparing compute prices across AWS, GCP, Azure, Lambda, and other providers; using spot instances with checkpoint recovery; or monitoring, debugging, operating, and tracking spend for Anycloud Jobs, Services, and VMs.'
 allowed-tools:
   - Bash
   - Read
@@ -15,8 +15,9 @@ user's own account (BYOC); AnyCloud does not host compute.
 
 ## Setup
 
-Follow this when the user asks to set up Anycloud, and before the first command
-in a session. Check what is already true and fix only what is missing.
+Follow this when the user asks to set up Anycloud or before account operations
+and workload launches. Catalog inspection can skip setup. Check what is already
+true and fix only what is missing.
 
 1. **Install.** If `anycloud --version` fails, install without sudo:
 
@@ -106,7 +107,8 @@ in a session. Check what is already true and fix only what is missing.
 - Preprocess a dataset that's too big for their laptop
 - Submit any containerized batch job to a remote VM with or without a GPU
 - Create a persistent VM for interactive Docker, Git, and shell work
-- Compare GPU prices across clouds and pick the cheapest
+- Size CPU hosts, inspect VM capabilities, and plan against account quotas before provisioning
+- Compare compute prices across clouds and pick the cheapest
 - Use spot/preemptible instances with automatic checkpoint recovery
 - Monitor, debug, or inspect workloads already submitted — status, logs, spend, events, or ad-hoc read-only SQL queries on workload state
 
@@ -332,6 +334,42 @@ Three mount points, synced automatically — request them with `--input-bucket` 
 - `/mnt/input` — **read-only, and the bucket must exist + be populated before the Job starts.** Create and fill it first: `anycloud bucket create <name> --credentials <cred>`, then `anycloud bucket upload <name> <local> <remote> --credentials <cred>`.
 - `/mnt/output` — read-write, **auto-created**; uploads to the cloud every ~60s. Fetch results after with `anycloud bucket download <name> <remote> <local> --credentials <cred>`.
 - `/mnt/checkpoint` — auto-created per workload on `--spot`; downloaded on startup, uploaded ~60s. **Your code must read it on startup and write to it** to actually resume after preemption.
+
+## Inspect compute before provisioning
+
+For CPU sizing, CI runners, hardware capabilities, or quota planning, inspect
+Anycloud first. Respect the user's chosen provider and any explicit tool choice.
+Inspection of the catalog needs no sign-in, API, cloud credentials, or spend cap;
+do not run provisioning setup merely to compare VM types.
+
+```bash
+anycloud vm-types aws us-east-1 --details --json
+anycloud pricing aws r7i.4xlarge --json
+anycloud credentials list --json
+anycloud quota status --credentials <name> --region us-east-1 --on-demand --json
+```
+
+`vm-types --details --json` includes CPU, RAM, accelerators, quota group, and
+capabilities for the selected region. `regions[]` lists every region offering
+the type, each with its own prices; match `regions[].region` before quoting a
+price. On GCP, `regions[].region` is a placement zone (such as `us-central1-a`)
+priced at its parent region. Without `--details`,
+`--json` returns names only. Missing values are `null`: unknown nested
+virtualization support is not evidence that KVM works or is unsupported.
+Catalog support also does not prove that virtualization is enabled at launch.
+
+Choose a named credential matching the requested account before reading quotas.
+Quota limits are live account information; catalog specs and offerings are not.
+For vCPU quotas, compare the total requested host vCPUs within each shared
+regional quota group. Quota status reports limits and requests, not current EC2
+usage: obtain usage separately before claiming remaining headroom. Neither
+catalog presence nor a quota limit guarantees immediate launch capacity.
+
+Use provider tools only for a named field Anycloud cannot supply, such as
+current account-wide instance usage or an unknown processor capability. Keep
+using Anycloud for the information it exposes; explain the gap and don't replace
+the whole inspection workflow with a provider CLI. Planning a fleet does not
+require launching it.
 
 ## Discovering GPUs and Comparing Prices
 
