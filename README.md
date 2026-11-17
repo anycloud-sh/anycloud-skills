@@ -44,4 +44,4 @@ persistent VMs, plus inspecting Kubernetes Deployments and their Jobs.
 
 ## License
 
-MIT.
+MIT; see [LICENSE](LICENSE).
