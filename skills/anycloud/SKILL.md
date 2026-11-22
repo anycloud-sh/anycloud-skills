@@ -114,7 +114,7 @@ true and fix only what is missing.
 
 **Don't use AnyCloud for:**
 
-- Using a VM as a managed production endpoint — use `anycloud service` for a long-running HTTP Service, or `anycloud cluster create` for a hosted Anycloud API on your own cluster.
+- Using a VM as a managed production endpoint — use `anycloud service` for a long-running HTTP Service, or `anycloud api create` for a hosted Anycloud API on your own cluster.
 - Local-only workloads (run locally with Docker / Python directly).
 - Workloads whose compliance requirements cannot be met by the selected cloud identity and region. Select a compliant compute credential and pin the region when required.
 
@@ -417,31 +417,19 @@ anycloud cost [<id>] [--period 1d..90d]           # Job + Service + VM spend
 
 **Scopes:** account-wide (default — counts human submits too) or `--agent-session` (only the current agent run). For an agent submitting autonomously, set an `--agent-session` `budget` and/or `throttle` cap first as your guardrail.
 
-## Listing workloads and Deployments
+## Listing workloads
 
 ```bash
 anycloud list                                      # recent workloads across all types
 anycloud job list --status failed                  # Jobs only
 anycloud service list --json                       # Services as JSON
 anycloud vm list                                  # VMs only
-anycloud deployment list --node-pool training --json   # Deployments on one node pool
-anycloud job list --deployment <deployment-id> -n 400       # more Jobs for one Deployment
 ```
 
 `job list`, `service list`, and `vm list` accept `ls` aliases and print directly.
 They retain the existing filters, limits, agent session scope, and JSON/CSV/ID
-output. Their workload type is fixed, so they do not accept `--type`.
-
-`deployment list --node-pool` accepts a node pool ID or name and reads stored
-inventory, even when the node pool is unhealthy. `job list --deployment`
-requires an immutable Deployment ID and can retrieve historical Jobs after that
-Deployment is deleted. Put listing options after `list` or `ls`;
-`job --deployment <id-or-name>` submits a new Job instead.
-
-In an interactive terminal, `anycloud list` offers the combined overview and
-node pool → Deployment picker. `anycloud job list --watch` opens that picker and
-refreshes the selected Deployment's Jobs; watch cannot be combined with filters or
-machine-readable output.
+output. Their workload type is fixed, so they do not accept `--type`. Put
+listing options after `list` or `ls`.
 
 ## Waiting on workloads
 
@@ -458,8 +446,8 @@ anycloud job <image> ... --wait            # submit and wait (also service ... -
 
 - **Exit codes:** `0` every workload reached its target; `1` one ended any other way (`errored`, `failed`, `invalid`, `terminated`); `2` the wait could not observe one (not found, not signed in, no API, bad arguments); `4` `--timeout` elapsed; `130` Ctrl-C. With `--wait`, a submission that fails also exits `1`, before anything was created. Branch on the exit code, not on output text; in JSON, read `.retry.diagnosis`, not the human labels.
 - **Output:** one line per state change, plus a heartbeat after 30 minutes without one, so a Monitor or background task stays informed without your own sleep loop. A retrying line names the attempt, the cause (capacity or quota) and when the next attempt is due. With `--json`, records have `type` `state`, `heartbeat`, `observer` or `result`.
-- Wait on node pools, Deployments and clusters with typed references, mixed with Workload IDs: `anycloud wait node-pool/<id> deployment/<id> cluster/<id> train-a`. A Deployment succeeds when the Pod on its latest revision is ready. `deployment create`, `deployment upgrade` and `node-pool create` take `--wait` too; `upgrade --wait` waits for that upgrade's revision.
-- Lines and records say why something waits (`jobsAhead` for a queued Deployment Job, a node pool blocking a Service) and why a Workload ended early (`reason`, such as `claim-deadline-expired`).
+- Wait on a cluster with a typed reference, mixed with Workload IDs: `anycloud wait cluster/<id> train-a`.
+- Lines and records say why something waits, such as a spend cap, and why a Workload ended early (`reason`).
 - Run long waits in the background (or under Monitor) instead of as a foreground command that hits a tool timeout. Waiting never terminates or resubmits anything.
 - **Earlier versions:** use `anycloud status <id> --watch --json` and read `.workload.state` from the last line. Its exit code is `0` even when the Job failed, and it never stops for a running Service or VM.
 
@@ -521,7 +509,7 @@ Only `SELECT` / `WITH` / `EXPLAIN` / `PRAGMA` run; results cap at 10,000 rows (`
 - **GPU count: `--gpus all` vs `--gpus 8` (CLI), `gpuType="h100:8"` (SDK).** On `anycloud job`, `--gpus all` uses every GPU on whatever VM is provisioned (varies by quota); use an explicit count when N matters. In the generated Python admission model, set `gpuType` to `<type>:<count>`.
 - **Placement stays within one compute identity.** Each submission resolves one credential and provider. Compare providers before choosing that identity; use `--region` to constrain placement within it.
 - **A Job's VM is released when it finishes.** Inspect a running job with `anycloud exec` / `anycloud ssh` before it exits; afterwards, read `anycloud status <id> --verbose` and `anycloud logs <id>`.
-- **Agent runs are session-scoped.** In non-interactive agent runs, `list` (including `job list`, `service list`, and `vm list`) and `status` default to the detected session. A Job list with `--deployment` keeps that session filter. An empty list does not mean no Jobs exist. Pass `--session <id>` or `--agent <name>` to select another scope.
+- **Agent runs are session-scoped.** In non-interactive agent runs, `list` (including `job list`, `service list`, and `vm list`) and `status` default to the detected session. An empty list does not mean no Jobs exist. Pass `--session <id>` or `--agent <name>` to select another scope.
 - **`list` and `ls` are subcommands.** Under `job`, `service`, `vm`, and their aliases, launch images with these names using a tag, such as `anycloud job list:latest`.
 
 ## Reference
